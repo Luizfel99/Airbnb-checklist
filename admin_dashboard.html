@@ -109,12 +109,19 @@
 
 
         // --- Initialization ---
-        if (typeof __firebase_config !== 'undefined') {
-            const firebaseConfig = JSON.parse(__firebase_config);
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
+        try { // Bloco try/catch adicionado para capturar falhas de configuração
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+            } else {
+                console.warn("A configuração do Firebase (__firebase_config) está ausente no ambiente. O Dashboard não funcionará sem ela.");
+            }
+        } catch (e) {
+            console.error("ERRO: Falha ao inicializar o Firebase. Verifique o JSON de configuração:", e);
         }
+        
         if (typeof __app_id !== 'undefined') {
             appId = __app_id;
         }
@@ -423,8 +430,11 @@
          */
         async function setupAuthAndListen() {
             if (!auth) {
-                authStatusEl.textContent = "ERRO: Firebase Auth não inicializado.";
-                authStatusEl.className = "text-sm font-medium text-red-600";
+                // Mensagem de erro aprimorada
+                authStatusEl.textContent = "ERRO FATAL: Falha na inicialização do Firebase Auth. Verifique a configuração do ambiente ou recarregue a página.";
+                authStatusEl.className = "text-sm font-bold text-red-600";
+                loadingIndicator.classList.add('hidden');
+                emptyState.classList.remove('hidden');
                 return;
             }
 
@@ -445,7 +455,7 @@
                         startRealtimeListener();
                     } else {
                         isAuthReady = false;
-                        authStatusEl.textContent = "ERRO: Conexão com o sistema falhou.";
+                        authStatusEl.textContent = "ERRO: Conexão com o sistema falhou (Estado de autenticação inválido).";
                         authStatusEl.className = "text-sm font-medium text-red-600";
                         loadingIndicator.classList.add('hidden');
                         emptyState.classList.remove('hidden');
