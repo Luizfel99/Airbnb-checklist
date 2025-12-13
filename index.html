@@ -59,6 +59,11 @@
                 </button>
             </div>
             
+            <!-- Firebase Status -->
+            <div class="mb-4 text-center">
+                <p id="auth-status" class="text-sm font-medium text-gray-500"></p>
+            </div>
+
             <!-- Metadata Form -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-700">
                 <div>
@@ -133,16 +138,44 @@
 
     </div>
 
-    <script>
-        // --- Gemini API Constants ---
-        const API_KEY = ""; // A chave API é fornecida automaticamente no ambiente Canvas
+    <script type="module">
+        // --- FIREBASE IMPORTS ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        setLogLevel('Debug'); // Enable debug logging for Firestore
+
+        // --- GLOBAL FIREBASE VARIABLES ---
+        let db;
+        let auth;
+        let userId = 'anonymous'; 
+        let isAuthReady = false;
+        let appId = 'default-app-id';
+        const CHECKLIST_PROGRESS_COLLECTION = 'currentChecklist';
+        const SUBMITTED_COLLECTION = 'submittedChecklists';
+
+        // Initialize Firebase on load
+        if (typeof __firebase_config !== 'undefined') {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+        }
+        if (typeof __app_id !== 'undefined') {
+            appId = __app_id;
+        }
+
+        // --- GEMINI API CONSTANTS ---
+        const API_KEY = ""; 
         const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
 
-        const LOCAL_STORAGE_KEY = 'airbnb_cleaning_checklist_data_v2'; // Updated key for language support
+        // --- CHECKLIST CONSTANTS ---
+        const LOCAL_STORAGE_KEY = 'airbnb_cleaning_checklist_data_v2'; 
         let currentLang = localStorage.getItem('checklist_language') || 'pt';
-        let resetConfirm = false; // For two-click reset confirmation
+        let resetConfirm = false; 
 
-        // Referências DOM - Declaradas globalmente (let) para serem inicializadas após o carregamento do DOM
+        // --- DOM References (Initialized in initializeDOMReferences) ---
         let checklistContainer;
         let propriedadeInput;
         let noteModal;
@@ -152,11 +185,11 @@
         let generatedNoteOutput;
         let generateNoteSpinner;
         let resetBtn;
-        // NOVAS REFERÊNCIAS explícitas para os SPANs de texto dos botões:
         let saveTextEl; 
         let exportTextEl; 
         let resetTextEl; 
         let generateNoteTextBtnEl; 
+        let authStatusEl;
         
         const metadataFields = ['propriedade', 'data', 'cleaner'];
 
@@ -168,8 +201,8 @@
                 meta_cleaner: "Limpeza (Cleaner)",
                 placeholder_propriedade: "Ex: Apto 101 - Praia",
                 placeholder_cleaner: "Seu Nome",
-                btn_save: "Salvar Progresso",
-                btn_export: "Exportar CSV",
+                btn_save: "Salvar Progresso (Cloud)",
+                btn_export: "Finalizar e Enviar Dados",
                 btn_reset: "Limpar Checklist",
                 btn_reset_confirm: "CLIQUE NOVAMENTE PARA CONFIRMAR!",
                 btn_generate_note: "Gerar Nota de Boas-Vindas ✨",
@@ -188,9 +221,9 @@
                 modal_close: "Fechar",
                 status_completed: "COMPLETO",
                 status_pending: "PENDENTE",
-                message_save_auto: "Progresso salvo automaticamente.",
+                message_save_auto: "Progresso salvo automaticamente na nuvem.",
                 message_save_manual: "Progresso salvo manualmente!",
-                message_export_success: "Exportado com sucesso para CSV!",
+                message_export_success: "Checklist finalizado e enviado com sucesso!",
                 message_reset_success: "Checklist limpo e resetado com sucesso!",
                 message_copy_success: "Nota copiada para a área de transferência!",
                 message_copy_fail: "Falha ao copiar. Por favor, copie manualmente.",
@@ -198,6 +231,10 @@
                 message_generating: "Aguarde, a Nota de Boas-Vindas está sendo gerada pela IA...",
                 message_generation_fail: "Não foi possível gerar a nota. Tente novamente.",
                 message_photo_unsupported_pt: "Esta funcionalidade de upload não está disponível no Canvas. Por favor, lembre-se de tirar fotos obrigatórias para o seu relatório externo.",
+                message_firestore_error: "Erro no Banco de Dados. Verifique o console.",
+                auth_status_loading: "Conectando ao sistema...",
+                auth_status_success: "Conectado como: ",
+                auth_status_error: "ERRO: Conexão com o sistema falhou.",
                 photo_mandatory: "FOTO OBRIGATÓRIA:",
                 label_id: "ID:",
                 label_task: "Tarefa",
@@ -210,8 +247,8 @@
                 meta_cleaner: "Cleaner",
                 placeholder_propriedade: "E.g.: Apt 101 - Beach",
                 placeholder_cleaner: "Your Name",
-                btn_save: "Save Progress",
-                btn_export: "Export CSV",
+                btn_save: "Save Progress (Cloud)",
+                btn_export: "Finalize & Submit Data",
                 btn_reset: "Clear Checklist",
                 btn_reset_confirm: "CLICK AGAIN TO CONFIRM!",
                 btn_generate_note: "Generate Welcome Note ✨",
@@ -230,9 +267,9 @@
                 modal_close: "Close",
                 status_completed: "COMPLETE",
                 status_pending: "PENDENTE",
-                message_save_auto: "Progress saved automatically.",
+                message_save_auto: "Progress saved automatically to cloud.",
                 message_save_manual: "Progress saved manually!",
-                message_export_success: "Successfully exported to CSV!",
+                message_export_success: "Checklist finalized and submitted successfully!",
                 message_reset_success: "Checklist cleared and reset successfully!",
                 message_copy_success: "Note copied to clipboard!",
                 message_copy_fail: "Failed to copy. Please copy manually.",
@@ -240,11 +277,15 @@
                 message_generating: "Please wait, the Welcome Note is being generated by AI...",
                 message_generation_fail: "Could not generate note. Try again.",
                 message_photo_unsupported_en: "This upload feature is not supported in Canvas. Please remember to take mandatory photos for your external report.",
+                message_firestore_error: "Database Error. Check console.",
+                auth_status_loading: "Connecting to system...",
+                auth_status_success: "Connected as: ",
+                auth_status_error: "ERROR: System connection failed.",
                 photo_mandatory: "MANDATORY PHOTO:",
                 label_id: "ID:",
-                label_task: "Tarefa",
+                label_task: "Task",
                 label_status: "Status",
-                label_obs: "Observações / Details",
+                label_obs: "Observations / Details",
             }
         };
 
@@ -327,7 +368,7 @@
             },
             {
                 id: 'servico',
-                title: { pt: "⚙️ ÁREA DE SERVIÇO/LAVANDERIA (Se aplicável)", en: "⚙️ UTILITY ROOM/LAUNDRY (If applicable)" },
+                title: { pt: "⚙️ ÁREAS DE SERVIÇO/LAVANDERIA (Se aplicável)", en: "⚙️ UTILITY ROOM/LAUNDRY (If applicable)" },
                 mandatoryPhoto: { pt: "Vista geral da lavanderia.", en: "General view of the laundry room." },
                 tasks: [
                     { pt: "Limpar máquina de lavar (dentro e fora).", en: "Clean washing machine (inside and out)." },
@@ -371,6 +412,22 @@
 
         // --- Core Functions ---
 
+        /**
+         * Returns the Firestore document path for the current user's progress.
+         */
+        function getProgressDocRef() {
+            // Path: /artifacts/{appId}/users/{userId}/currentChecklist/progress
+            return doc(db, 'artifacts', appId, 'users', userId, CHECKLIST_PROGRESS_COLLECTION, 'progress');
+        }
+
+        /**
+         * Returns the Firestore collection reference for public submitted data.
+         */
+        function getSubmittedCollectionRef() {
+            // Path: /artifacts/{appId}/public/data/submittedChecklists
+            return collection(db, 'artifacts', appId, 'public', 'data', SUBMITTED_COLLECTION);
+        }
+
         function updateUIText(lang) {
             const t = translations[lang];
 
@@ -412,29 +469,92 @@
             updateUIText(currentLang);
         }
 
-        // Load data from localStorage
-        function loadChecklistState() {
+        /**
+         * Loads checklist state from Firestore for the current user.
+         */
+        async function loadChecklistState() {
+            if (!isAuthReady || !db) return {};
+
             try {
-                const storedData = localStorage.getItem(LOCAL_STORAGE_KEY);
-                return storedData ? JSON.parse(storedData) : {};
+                const docRef = getProgressDocRef();
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    console.log("Progress loaded from Firestore.");
+                    return docSnap.data();
+                } else {
+                    console.log("No saved progress found in Firestore.");
+                    return {};
+                }
             } catch (error) {
-                console.error("Erro ao carregar do localStorage:", error);
+                console.error("Error loading checklist from Firestore:", error);
+                displayMessage(translations[currentLang].message_firestore_error, "text-red-600");
                 return {};
             }
         }
 
-        // Save data to localStorage
-        function saveChecklistState() {
+        /**
+         * Saves current checklist state to Firestore for progress tracking.
+         */
+        async function saveChecklistState() {
+            if (!isAuthReady || !db) return;
+
             const state = getCurrentChecklistState();
+            
             try {
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(state));
+                const docRef = getProgressDocRef();
+                await setDoc(docRef, state);
                 displayMessage(translations[currentLang].message_save_auto, "text-sky-500");
-                resetConfirm = false; // Reset confirmation state
+                resetConfirm = false; 
                 resetBtn.classList.remove('reset-confirm');
-                resetTextEl.textContent = translations[currentLang].btn_reset; // Corrigido
+                resetTextEl.textContent = translations[currentLang].btn_reset;
             } catch (error) {
-                console.error("Erro ao salvar no localStorage:", error);
-                displayMessage(translations[currentLang].message_generation_fail, "text-red-500");
+                console.error("Error saving checklist to Firestore:", error);
+                displayMessage(translations[currentLang].message_firestore_error, "text-red-600");
+            }
+        }
+
+        /**
+         * Submits the finalized checklist to the public collection.
+         */
+        async function submitChecklist() {
+            if (!isAuthReady || !db) {
+                displayMessage(translations[currentLang].auth_status_error, "text-red-600");
+                return;
+            }
+
+            const state = getCurrentChecklistState();
+            const propertyName = state.metadata.propriedade;
+            
+            if (!propertyName) {
+                displayMessage(translations[currentLang].message_prop_required, "text-red-600");
+                return;
+            }
+
+            try {
+                const submissionData = {
+                    ...state,
+                    submittedAt: new Date().toISOString(),
+                    submittedBy: userId,
+                    appId: appId,
+                    status: 'FINALIZED'
+                };
+
+                const docRef = await addDoc(getSubmittedCollectionRef(), submissionData);
+                console.log("Checklist submitted successfully. Document ID:", docRef.id);
+                
+                // Clear progress data after successful submission
+                await setDoc(getProgressDocRef(), {}, { merge: false });
+
+                // Success message and CSV download trigger
+                displayMessage(translations[currentLang].message_export_success, "text-green-600");
+                
+                // Optional: Automatically trigger CSV download after cloud submission
+                exportToCSV(true); 
+
+            } catch (error) {
+                console.error("Error submitting checklist to Firestore:", error);
+                displayMessage(translations[currentLang].message_firestore_error, "text-red-600");
             }
         }
 
@@ -571,12 +691,11 @@
             
             // Re-attach event listeners and load state after rendering
             addEventListeners();
-            // Note: State application is separate from rendering the content structure
         }
 
-        // --- Gemini Feature Logic ---
+        // --- Gemini Feature Logic (Unchanged) ---
         
-        // Helper for displaying loading state in the modal
+        // (Function implementations for setLoading, callGeminiApi, generateWelcomeNote remain the same)
         function setLoading(isLoading) {
             const t = translations[currentLang];
             generateNoteAction.disabled = isLoading;
@@ -590,7 +709,6 @@
             }
         }
 
-        // Function to handle the Gemini API call with exponential backoff
         async function callGeminiApi(payload) {
             let retries = 0;
             const maxRetries = 5;
@@ -606,7 +724,6 @@
                     if (response.ok) {
                         return await response.json();
                     } else if (response.status === 429) {
-                        // Too Many Requests - apply backoff
                         const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
                         retries++;
                         await new Promise(resolve => setTimeout(resolve, delay));
@@ -630,15 +747,13 @@
             const context = noteContext.value.trim() || (currentLang === 'pt' ? 'sem contexto adicional' : 'no additional context');
 
             if (!propertyName) {
-                // Use custom message instead of alert()
-                noteModal.classList.add('hidden'); // Hide modal to show message in header
+                noteModal.classList.add('hidden');
                 displayMessage(t.message_prop_required, "text-red-500");
                 return;
             }
             
             setLoading(true);
 
-            // System prompt should be bilingual to handle multilingual context inputs, but the output language should match currentLang
             const systemPrompt = `You are a friendly and professional writing assistant, specialized in drafting short, warm welcome notes for short-term rental guests (Airbnb). The note must have a welcoming and positive tone, confirming that the cleaning is complete and the property is ready. The response MUST be in ${currentLang === 'pt' ? 'Portuguese' : 'English'}.`;
                 
             const userQuery = `Generate a welcome note for a guest staying at the property named "${propertyName}". Use the following context: "${context}". Add a brief mention that cleaning has been completed and the place is ready. End the note with a warm closing sentence. The note should be short (maximum 4 sentences).`;
@@ -667,6 +782,7 @@
             }
         }
 
+
         // --- Event Handlers ---
 
         function updateGeminiButtonState() {
@@ -690,7 +806,6 @@
             const t = translations[currentLang];
             const message = currentLang === 'pt' ? t.message_photo_unsupported_pt : t.message_photo_unsupported_en;
             
-            // Display a message indicating that file upload is not supported in this environment
             displayMessage(`[${sectionId}] ${message}`, "text-orange-500");
         }
 
@@ -699,138 +814,47 @@
 
             if (resetConfirm) {
                 // Second click: Perform reset
-                localStorage.removeItem(LOCAL_STORAGE_KEY);
-                // Clear metadata inputs
+                // Since progress is now in Firestore, we clear the data there.
+                if (isAuthReady && db) {
+                    setDoc(getProgressDocRef(), {}, { merge: false })
+                        .then(() => console.log("Firestore progress cleared."))
+                        .catch(err => console.error("Failed to clear progress:", err));
+                }
+                
+                // Clear all local inputs
                 metadataFields.forEach(id => {
                     const input = document.getElementById(id);
                     if (input) input.value = '';
                 });
-                // Reload state (which will be empty) and re-render
-                applyChecklistState(loadChecklistState()); 
+                applyChecklistState({}); // Clear UI
                 updateUIText(currentLang);
                 displayMessage(t.message_reset_success, "text-red-500");
                 resetConfirm = false;
                 resetBtn.classList.remove('reset-confirm');
-                resetTextEl.textContent = t.btn_reset; // Corrigido
+                resetTextEl.textContent = t.btn_reset;
 
             } else {
                 // First click: Ask for confirmation
                 resetConfirm = true;
                 resetBtn.classList.add('reset-confirm');
-                resetTextEl.textContent = t.btn_reset_confirm; // Corrigido
+                resetTextEl.textContent = t.btn_reset_confirm;
                 
                 // Reset confirmation state after 3 seconds if no second click
                 setTimeout(() => {
                     if (resetConfirm) {
                         resetConfirm = false;
                         resetBtn.classList.remove('reset-confirm');
-                        resetTextEl.textContent = t.btn_reset; // Corrigido
+                        resetTextEl.textContent = t.btn_reset;
                     }
                 }, 3000);
             }
         }
-
-        function addEventListeners() {
-            // Language Toggle
-            document.getElementById('lang-toggle-btn').addEventListener('click', toggleLanguage);
-
-            // Auto-save on change in any input/checkbox
-            document.querySelectorAll('.task-checkbox, .task-obs').forEach(el => {
-                el.addEventListener('change', saveChecklistState);
-                el.addEventListener('input', saveChecklistState);
-            });
-            metadataFields.forEach(id => {
-                const input = document.getElementById(id);
-                if (input) {
-                    input.addEventListener('change', saveChecklistState);
-                    input.addEventListener('input', saveChecklistState);
-                    // Check button state on property input change
-                    if (id === 'propriedade') {
-                        input.addEventListener('input', updateGeminiButtonState);
-                    }
-                }
-            });
-
-            // New: Add Photo Button Listener
-            document.querySelectorAll('.add-photo-btn').forEach(btn => {
-                btn.addEventListener('click', handlePhotoAdd);
-            });
-
-            // Manual Save Button (for user feedback)
-            document.getElementById('save-btn').addEventListener('click', () => {
-                saveChecklistState();
-                displayMessage(translations[currentLang].message_save_manual, "text-sky-500");
-            });
-
-            // Export Button
-            document.getElementById('export-btn').addEventListener('click', exportToCSV);
-
-            // Reset Button (Two-click confirmation)
-            document.getElementById('reset-btn').addEventListener('click', handleResetClick);
-
-            // --- Gemini Feature Listeners ---
-
-            // Open Modal
-            generateNoteBtn.addEventListener('click', () => {
-                // Clear previous output
-                generatedNoteOutput.value = "";
-                // Show modal
-                noteModal.classList.remove('hidden');
-                // Auto-fill property name in context if available
-                const propertyName = propriedadeInput.value.trim();
-                const t = translations[currentLang];
-                if (propertyName) {
-                    noteContext.value = `${t.meta_propriedade}: ${propertyName}.`;
-                } else {
-                    noteContext.value = '';
-                }
-            });
-
-            // Close Modal
-            document.getElementById('close-note-modal').addEventListener('click', () => {
-                noteModal.classList.add('hidden');
-            });
-            
-            // Generate Note Action
-            generateNoteAction.addEventListener('click', generateWelcomeNote);
-
-            // Copy to Clipboard
-            document.getElementById('copy-note-btn').addEventListener('click', () => {
-                generatedNoteOutput.select();
-                const t = translations[currentLang];
-                try {
-                    // Using document.execCommand('copy') as navigator.clipboard.writeText might fail in iFrame
-                    const successful = document.execCommand('copy');
-                    if (successful) {
-                        displayMessage(t.message_copy_success, "text-sky-500");
-                    } else {
-                        displayMessage(t.message_copy_fail, "text-red-500");
-                    }
-                } catch (err) {
-                    console.error('Falha ao copiar:', err);
-                    displayMessage(t.message_copy_fail, "text-red-500");
-                }
-            });
-
-            // Initial check for Gemini button state
-            updateGeminiButtonState();
-        }
-
-        // Display a brief message to the user
-        function displayMessage(text, className) {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = text;
-            messageEl.className = `mt-3 text-sm text-center font-medium ${className}`;
-            
-            // Clear message after 3 seconds
-            setTimeout(() => {
-                messageEl.textContent = '';
-                messageEl.className = `mt-3 text-sm text-center font-medium text-gray-500`;
-            }, 3000);
-        }
         
-        // Export function
-        function exportToCSV() {
+        /**
+         * Exports data to CSV. Can be called automatically after submission.
+         * @param {boolean} silent - If true, suppresses the success message and download link removal.
+         */
+        function exportToCSV(silent = false) {
             const t = translations[currentLang];
             const state = getCurrentChecklistState();
             const metadata = state.metadata;
@@ -872,16 +896,108 @@
             link.setAttribute("download", `Checklist_Airbnb_${propName}_${date}.csv`);
             
             document.body.appendChild(link);
-            document.body.removeChild(link);
             link.click();
-            
+            document.body.removeChild(link);
 
-            displayMessage(t.message_export_success, "text-blue-500");
+            if (!silent) {
+                displayMessage(t.message_export_success, "text-blue-500");
+            }
+        }
+
+        function addEventListeners() {
+            // Language Toggle
+            document.getElementById('lang-toggle-btn').addEventListener('click', toggleLanguage);
+
+            // Auto-save on change in any input/checkbox (Save to Firestore)
+            document.querySelectorAll('.task-checkbox, .task-obs').forEach(el => {
+                el.addEventListener('change', saveChecklistState);
+                el.addEventListener('input', saveChecklistState);
+            });
+            metadataFields.forEach(id => {
+                const input = document.getElementById(id);
+                if (input) {
+                    input.addEventListener('change', saveChecklistState);
+                    input.addEventListener('input', saveChecklistState);
+                    // Check button state on property input change
+                    if (id === 'propriedade') {
+                        input.addEventListener('input', updateGeminiButtonState);
+                    }
+                }
+            });
+
+            // New: Add Photo Button Listener
+            document.querySelectorAll('.add-photo-btn').forEach(btn => {
+                btn.addEventListener('click', handlePhotoAdd);
+            });
+
+            // Manual Save Button (for user feedback)
+            document.getElementById('save-btn').addEventListener('click', saveChecklistState);
+
+            // Export/Submit Button (Submits to Firestore)
+            document.getElementById('export-btn').addEventListener('click', submitChecklist);
+
+            // Reset Button (Two-click confirmation)
+            document.getElementById('reset-btn').addEventListener('click', handleResetClick);
+
+            // --- Gemini Feature Listeners ---
+
+            // Open Modal
+            generateNoteBtn.addEventListener('click', () => {
+                generatedNoteOutput.value = "";
+                noteModal.classList.remove('hidden');
+                const propertyName = propriedadeInput.value.trim();
+                const t = translations[currentLang];
+                if (propertyName) {
+                    noteContext.value = `${t.meta_propriedade}: ${propertyName}.`;
+                } else {
+                    noteContext.value = '';
+                }
+            });
+
+            // Close Modal
+            document.getElementById('close-note-modal').addEventListener('click', () => {
+                noteModal.classList.add('hidden');
+            });
+            
+            // Generate Note Action
+            generateNoteAction.addEventListener('click', generateWelcomeNote);
+
+            // Copy to Clipboard
+            document.getElementById('copy-note-btn').addEventListener('click', () => {
+                generatedNoteOutput.select();
+                const t = translations[currentLang];
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        displayMessage(t.message_copy_success, "text-sky-500");
+                    } else {
+                        displayMessage(t.message_copy_fail, "text-red-500");
+                    }
+                } catch (err) {
+                    console.error('Falha ao copiar:', err);
+                    displayMessage(t.message_copy_fail, "text-red-500");
+                }
+            });
+
+            // Initial check for Gemini button state
+            updateGeminiButtonState();
+        }
+
+        // Display a brief message to the user
+        function displayMessage(text, className) {
+            const messageEl = document.getElementById('message');
+            messageEl.textContent = text;
+            messageEl.className = `mt-3 text-sm text-center font-medium ${className}`;
+            
+            // Clear message after 3 seconds
+            setTimeout(() => {
+                messageEl.textContent = '';
+                messageEl.className = `mt-3 text-sm text-center font-medium text-gray-500`;
+            }, 3000);
         }
 
         /**
          * Inicializa todas as referências DOM após o carregamento da página.
-         * Isso resolve o problema de acesso a elementos antes que o navegador os tenha criado.
          */
         function initializeDOMReferences() {
             
@@ -895,6 +1011,7 @@
             generatedNoteOutput = document.getElementById('generated-note-output');
             generateNoteSpinner = document.getElementById('generate-note-spinner');
             resetBtn = document.getElementById('reset-btn');
+            authStatusEl = document.getElementById('auth-status');
             
             // Initialize SPAN text elements (these are critical for the initial render)
             saveTextEl = document.getElementById('save-text');
@@ -918,30 +1035,67 @@
             return true;
         }
 
+        /**
+         * Configura a autenticação e inicia o carregamento dos dados.
+         */
+        async function setupAuthAndLoad() {
+            const t = translations[currentLang];
+            authStatusEl.textContent = t.auth_status_loading;
+
+            try {
+                // 1. Autenticação
+                if (typeof __initial_auth_token !== 'undefined' && auth) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else if (auth) {
+                    await signInAnonymously(auth);
+                }
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        isAuthReady = true;
+                        authStatusEl.textContent = `${t.auth_status_success} ${userId}`;
+                        authStatusEl.className = "text-xs font-medium text-gray-600 truncate";
+                        
+                        // 2. Carregar o estado
+                        const initialState = await loadChecklistState();
+                        applyChecklistState(initialState);
+                    } else {
+                        isAuthReady = false;
+                        authStatusEl.textContent = t.auth_status_error;
+                        authStatusEl.className = "text-xs font-medium text-red-600";
+                    }
+                });
+
+            } catch (error) {
+                console.error("Firebase Auth Error:", error);
+                authStatusEl.textContent = t.auth_status_error;
+                authStatusEl.className = "text-xs font-medium text-red-600";
+            }
+        }
+
         // --- Initialization ---
 
-        // Start the application
-        window.onload = () => {
-            // Use a try/catch genérico para capturar qualquer erro de inicialização remanescente.
-            try {
-                if (!initializeDOMReferences()) return;
-                
-                // 1. Apply language first (which calls renderChecklist)
-                updateUIText(currentLang);
-                
-                // 2. Load and apply state after UI structure is rendered
-                const initialState = loadChecklistState();
-                applyChecklistState(initialState);
-
-            } catch (e) {
-                console.error("ERRO FATAL DURANTE O CARREGAMENTO:", e);
-                const messageEl = document.getElementById('message');
-                if (messageEl) {
-                    messageEl.textContent = "ERRO FATAL: Falha na inicialização do JavaScript. Verifique o console do navegador.";
-                    messageEl.className = "mt-3 text-sm text-center font-bold text-white bg-red-600 p-2 rounded-lg";
-                }
+        // Start the application immediately after the DOM is parsed, as the script is at the end of the body.
+        try {
+            if (!initializeDOMReferences()) {
+                return; 
             }
-        };
+            
+            // 1. Apply static texts and initial render
+            updateUIText(currentLang);
+            
+            // 2. Setup Firebase Auth and load progress
+            setupAuthAndLoad();
+
+        } catch (e) {
+            console.error("ERRO FATAL DURANTE O CARREGAMENTO:", e);
+            const messageEl = document.getElementById('message');
+            if (messageEl) {
+                messageEl.textContent = "ERRO FATAL: Falha na inicialização do JavaScript. Verifique o console do navegador.";
+                messageEl.className = "mt-3 text-sm text-center font-bold text-white bg-red-600 p-2 rounded-lg";
+            }
+        }
 
     </script>
 </body>
