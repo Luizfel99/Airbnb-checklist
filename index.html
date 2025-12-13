@@ -884,6 +884,8 @@
          * Isso resolve o problema de acesso a elementos antes que o navegador os tenha criado.
          */
         function initializeDOMReferences() {
+            
+            // Initialize all references
             checklistContainer = document.getElementById('checklist-container');
             propriedadeInput = document.getElementById('propriedade');
             noteModal = document.getElementById('note-modal');
@@ -894,19 +896,25 @@
             generateNoteSpinner = document.getElementById('generate-note-spinner');
             resetBtn = document.getElementById('reset-btn');
             
-            // Inicializando as referências de texto explícitas (corrigindo o problema de carregamento)
+            // Initialize SPAN text elements (these are critical for the initial render)
             saveTextEl = document.getElementById('save-text');
             exportTextEl = document.getElementById('export-text');
             resetTextEl = document.getElementById('reset-text');
             generateNoteTextBtnEl = document.getElementById('generate-note-text-btn');
 
 
-            // Verifica se o container principal foi encontrado
-            if (!checklistContainer) {
-                console.error("Erro Crítico: O elemento '#checklist-container' não foi encontrado.");
-                document.getElementById('message').textContent = "Erro Crítico: Falha ao carregar o checklist. Recarregue a página.";
+            // CRITICAL CHECK: Ensure all absolutely necessary elements for step 1 (updateUIText) are present.
+            if (!checklistContainer || !saveTextEl || !exportTextEl || !resetTextEl || !generateNoteTextBtnEl) {
+                const messageEl = document.getElementById('message');
+                const errorMessage = "ERRO CRÍTICO: O HTML não carregou completamente. IDs essenciais ausentes. Por favor, tente recarregar.";
+                console.error(errorMessage, { checklistContainer, saveTextEl, exportTextEl, resetTextEl, generateNoteTextBtnEl });
+                if (messageEl) {
+                    messageEl.textContent = errorMessage;
+                    messageEl.className = "mt-3 text-sm text-center font-bold text-white bg-red-600 p-2 rounded-lg";
+                }
                 return false;
             }
+
             return true;
         }
 
@@ -914,14 +922,25 @@
 
         // Start the application
         window.onload = () => {
-            if (!initializeDOMReferences()) return;
-            
-            // 1. Apply language first (which calls renderChecklist)
-            updateUIText(currentLang);
-            
-            // 2. Load and apply state after UI structure is rendered
-            const initialState = loadChecklistState();
-            applyChecklistState(initialState);
+            // Use a try/catch genérico para capturar qualquer erro de inicialização remanescente.
+            try {
+                if (!initializeDOMReferences()) return;
+                
+                // 1. Apply language first (which calls renderChecklist)
+                updateUIText(currentLang);
+                
+                // 2. Load and apply state after UI structure is rendered
+                const initialState = loadChecklistState();
+                applyChecklistState(initialState);
+
+            } catch (e) {
+                console.error("ERRO FATAL DURANTE O CARREGAMENTO:", e);
+                const messageEl = document.getElementById('message');
+                if (messageEl) {
+                    messageEl.textContent = "ERRO FATAL: Falha na inicialização do JavaScript. Verifique o console do navegador.";
+                    messageEl.className = "mt-3 text-sm text-center font-bold text-white bg-red-600 p-2 rounded-lg";
+                }
+            }
         };
 
     </script>
