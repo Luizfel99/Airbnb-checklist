@@ -253,7 +253,7 @@
                 { id: 'gerais', title: "🏡 ÁREAS COMUNS E GERAIS", tasks: [ "Coletar lixo...", "Limpar espelhos...", "Limpar/Desinfetar interruptores...", "Aspirar/Varrer...", "Desinfetar superfícies...", "Ventilar o ambiente.", "Remover teias..." ] },
                 { id: 'sala', title: "🛋️ SALA DE ESTAR", tasks: [ "Limpar e organizar mesas...", "Limpar a televisão...", "Aspirar ou limpar sofás...", "Limpar rodapés." ] },
                 { id: 'quartos', tasks: [ "Trocar roupas de cama...", "Fazer as camas.", "2 toalhas de banho...", "Sacola de lixo...", "Limpar mesas de cabeceira...", "Limpar espelhos...", "Aspirar ou varrer o chão.", "Limpar dentro do guarda-roupa..." ] },
-                { id: 'banheiros', title: "🛁 BANHEIROS", tasks: [ "Limpar e desinfetar vasos...", "Limpar pias...", "Limpar espelhos.", "Limpar chuveiro...", "Trocar toalhas.", "Limpar o chão.", "Reabastecer papel...", "Sacola de lixo..." ] },
+                { id: 'banheiros', tasks: [ "Limpar e desinfetar vasos...", "Limpar pias...", "Limpar espelhos.", "Limpar chuveiro...", "Trocar toalhas.", "Limpar o chão.", "Reabastecer papel...", "Sacola de lixo..." ] },
                 { id: 'cozinha', title: "🍽️ COZINHA", tasks: [ "Limpar a pia.", "Limpar bancadas...", "1 papel toalha...", "No mínimo 5 sacolas...", "Limpar fogão e forno...", "Limpar micro-ondas...", "Esvaziar e limpar a geladeira.", "Limpar a lava-louças...", "Limpar armários e gavetas...", "Lavar a louça e guardar.", "Limpar o chão.", "Reabastecer produtos...", "Encher reservatório de água..." ] },
                 { id: 'servico', title: "⚙️ ÁREAS DE SERVIÇO/LAVANDERIA", tasks: [ "Limpar máquina de lavar...", "Limpar secadora...", "Limpar tanque/pia...", "Organizar produtos...", "Limpar o chão." ] },
                 { id: 'externa', title: "🌳 VARANDA / ÁREA EXTERNA", tasks: [ "Varrer ou lavar o chão.", "Limpar móveis...", "Remover teias de aranha.", "Regar plantas...", "Limpar Churrasqueira..." ] },
@@ -442,9 +442,11 @@
         try {
             // Garante que as referências DOM existem antes de tentar usá-las
             if (!initializeDOMReferences()) {
-                return; 
+                // Se a inicialização falhar, o erro já foi logado e exibido.
+                // O fluxo de execução termina aqui, evitando o erro de sintaxe.
+            } else {
+                setupAuthAndListen();
             }
-            setupAuthAndListen();
         } catch (e) {
             console.error("ERRO FATAL DURANTE O CARREGAMENTO:", e);
             const authStatusEl = document.getElementById('auth-status');
