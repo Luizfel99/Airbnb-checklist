@@ -97,15 +97,16 @@
         const SUBMITTED_COLLECTION = 'submittedChecklists';
         let currentChecklistData = null; // Used for single-entry export
 
-        // --- DOM References ---
-        const authStatusEl = document.getElementById('auth-status');
-        const loadingIndicator = document.getElementById('loading-indicator');
-        const checklistsList = document.getElementById('checklists-list');
-        const emptyState = document.getElementById('empty-state');
-        const detailsModal = document.getElementById('details-modal');
-        const modalContentDetails = document.getElementById('modal-content-details');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const exportSingleBtn = document.getElementById('export-single-btn');
+        // --- DOM References (Declared globally, assigned in initializeDOMReferences) ---
+        let authStatusEl;
+        let loadingIndicator;
+        let checklistsList;
+        let emptyState;
+        let detailsModal;
+        let modalContentDetails;
+        let closeModalBtn;
+        let exportSingleBtn;
+
 
         // --- Initialization ---
         if (typeof __firebase_config !== 'undefined') {
@@ -117,6 +118,37 @@
         if (typeof __app_id !== 'undefined') {
             appId = __app_id;
         }
+
+        /**
+         * Inicializa as referências DOM e verifica se os elementos críticos existem.
+         * Colocamos isso dentro de uma função para garantir que o script seja executado após o DOM estar pronto.
+         */
+        function initializeDOMReferences() {
+            // Tentativa de inicialização das referências
+            authStatusEl = document.getElementById('auth-status');
+            loadingIndicator = document.getElementById('loading-indicator');
+            checklistsList = document.getElementById('checklists-list');
+            emptyState = document.getElementById('empty-state');
+            detailsModal = document.getElementById('details-modal');
+            modalContentDetails = document.getElementById('modal-content-details');
+            closeModalBtn = document.getElementById('close-modal-btn');
+            exportSingleBtn = document.getElementById('export-single-btn');
+
+            // VERIFICAÇÃO CRÍTICA
+            if (!authStatusEl || !checklistsList || !loadingIndicator) {
+                const errorMsg = "ERRO CRÍTICO: Falha na inicialização do Painel. Elementos HTML essenciais (Status, Lista) ausentes.";
+                console.error(errorMsg, { authStatusEl, checklistsList, loadingIndicator });
+                
+                // Tenta escrever o erro na área de status
+                if (authStatusEl) {
+                    authStatusEl.textContent = errorMsg;
+                    authStatusEl.className = "text-sm font-medium text-red-600 font-bold";
+                }
+                return false;
+            }
+            return true;
+        }
+
 
         /**
          * Returns the Firestore collection reference for public submitted data.
@@ -407,6 +439,10 @@
 
         // Start the application with a try/catch wrapper for safety
         try {
+            // Garante que as referências DOM existem antes de tentar usá-las
+            if (!initializeDOMReferences()) {
+                return; 
+            }
             setupAuthAndListen();
         } catch (e) {
             console.error("ERRO FATAL DURANTE O CARREGAMENTO:", e);
