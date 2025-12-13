@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Acompanhamento de Checklists</title>
+    <title>Painel de Acompanhamento - ADMIN</title>
     <!-- Tailwind CSS CDN - Usado para prototipagem rápida. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -31,7 +31,7 @@
         
         <!-- Header -->
         <header class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas</h1>
+            <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas (ADMIN)</h1>
             <p class="text-gray-600">Visualização em tempo real dos Checklists finalizados e enviados.</p>
             <div id="auth-status" class="mt-3 text-sm font-medium text-gray-500">Conectando ao banco de dados...</div>
         </header>
@@ -288,7 +288,7 @@
                 { id: 'finalizacao', title: "✅ FINALIZAÇÃO", tasks: [ "Verificar se todos os cômodos...", "Verificar gavetas e armários...", "Reabastecer itens de cortesia...", "Repor: 2 águas...", "Repor: 2 chocolates...", "Repor: 1 Vinho...", "Ajustar a temperatura...", "Acender luzes...", "Deixar uma nota de boas-vindas...", "Verificar e notificar suprimentos..." ] }
             ];
 
-            // Cria um mapa de ID de tarefa para o nome da tarefa e adiciona títulos ao HTML
+            // Cria um mapa de ID de tarefa para o nome da tarefa
             const taskMap = {};
             
             // Itera sobre as tarefas salvas (e as ordena para exibição mais limpa)
@@ -310,7 +310,7 @@
                         const task = tasks[taskId];
                         const taskNameForDisplay = taskMap[taskId];
                         
-                        // Melhoria: Adiciona ícone e cor
+                        // MELHORIA: Adiciona ícone e cor
                         const status = task.status ? 
                             '<span class="text-green-600 font-extrabold ml-2">✔️ FEITO</span>' : 
                             '<span class="text-red-600 font-extrabold ml-2">❌ FALTOU</span>';
