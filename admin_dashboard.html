@@ -32,7 +32,16 @@
         <!-- Header -->
         <header class="bg-white p-6 rounded-xl shadow-lg mb-8">
             <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas (ADMIN)</h1>
-            <p class="text-gray-600">Visualização em tempo real dos Checklists finalizados e enviados. Dados vêm da coleção 'submittedChecklists'.</p>
+            
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <p class="text-gray-600 mb-3 sm:mb-0">Visualização em tempo real dos Checklists finalizados e enviados.</p>
+                
+                <!-- ATALHO ADICIONADO PARA O CHECKLIST DO CLEANER (index.html) -->
+                <a href="index.html" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200 shadow-md">
+                    Ir para Checklist (Cleaner)
+                </a>
+            </div>
+
             <div id="auth-status" class="mt-3 text-sm font-medium text-gray-500">Conectando ao banco de dados...</div>
         </header>
 
@@ -89,7 +98,7 @@
         
         setLogLevel('Debug'); // Enable debug logging for Firestore
 
-        // --- GLOBAL FIREBASE VARIABLES ---
+        // --- GLOBAL FIREBASE VARIABLES (Temporarily unset for secure re-initialization) ---
         let db;
         let auth;
         let isAuthReady = false;
@@ -106,27 +115,11 @@
         let modalContentDetails;
         let closeModalBtn;
         let exportSingleBtn;
-
-
-        // --- Initialization ---
-        try { // Bloco try/catch adicionado para capturar falhas de configuração
-            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-            } else {
-                console.warn("A configuração do Firebase (__firebase_config) está ausente no ambiente. O Dashboard não funcionará sem ela.");
-            }
-        } catch (e) {
-            console.error("ERRO: Falha ao inicializar o Firebase. Verifique o JSON de configuração:", e);
-            // Definir auth como null em caso de falha de inicialização
-            auth = null;
-        }
         
         if (typeof __app_id !== 'undefined') {
             appId = __app_id;
         }
+
 
         /**
          * Inicializa as referências DOM e verifica se os elementos críticos existem.
@@ -431,9 +424,24 @@
          * Configura a autenticação e inicia a escuta de dados.
          */
         async function setupAuthAndListen() {
+            // Tentativa de inicialização do Firebase dentro desta função
+            try {
+                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                    const firebaseConfig = JSON.parse(__firebase_config);
+                    const app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+                } else {
+                    auth = null; // Garante que auth seja null se a config falhar
+                }
+            } catch (e) {
+                console.error("ERRO: Falha ao inicializar o Firebase. Verifique o JSON de configuração:", e);
+                auth = null;
+            }
+
             if (!auth) {
-                // Mensagem de erro aprimorada
-                authStatusEl.textContent = "ERRO FATAL: Falha de Configuração. O Firebase Auth não foi inicializado corretamente (Faltam variáveis de ambiente).";
+                // Se a inicialização falhou (auth é null)
+                authStatusEl.textContent = "ERRO FATAL: Falha de Configuração. O Firebase Auth não foi inicializado (Verifique se as variáveis de ambiente estão presentes).";
                 authStatusEl.className = "text-sm font-bold text-red-600";
                 loadingIndicator.classList.add('hidden');
                 emptyState.classList.remove('hidden');
@@ -441,7 +449,7 @@
             }
 
             try {
-                // 1. Autenticação
+                // 1. Autenticação (Avança apenas se auth for válido)
                 if (typeof __initial_auth_token !== 'undefined') {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
