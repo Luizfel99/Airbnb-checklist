@@ -98,7 +98,7 @@
         
         setLogLevel('Debug'); // Enable debug logging for Firestore
 
-        // --- GLOBAL FIREBASE VARIABLES (Temporarily unset for secure re-initialization) ---
+        // --- GLOBAL FIREBASE VARIABLES (Declaradas no escopo do módulo) ---
         let db;
         let auth;
         let isAuthReady = false;
@@ -106,7 +106,7 @@
         const SUBMITTED_COLLECTION = 'submittedChecklists'; // MUST MATCH the collection used in index.html
         let currentChecklistData = null; // Used for single-entry export
 
-        // --- DOM References (Declared globally, assigned in initializeDOMReferences) ---
+        // --- DOM References (Declaradas globalmente, atribuídas em initializeDOMReferences) ---
         let authStatusEl;
         let loadingIndicator;
         let checklistsList;
@@ -424,18 +424,27 @@
          * Configura a autenticação e inicia a escuta de dados.
          */
         async function setupAuthAndListen() {
-            // Tentativa de inicialização do Firebase dentro desta função
+            // Tenta inicializar o Firebase no escopo do módulo
             try {
                 if (typeof __firebase_config !== 'undefined' && __firebase_config) {
                     const firebaseConfig = JSON.parse(__firebase_config);
                     const app = initializeApp(firebaseConfig);
+                    // Atribui ao escopo do módulo (let db/auth)
                     db = getFirestore(app);
                     auth = getAuth(app);
+                    
+                    // Adiciona ao escopo global para depuração, se necessário
+                    window.firebaseDb = db;
+                    window.firebaseAuth = auth;
+
                 } else {
-                    auth = null; // Garante que auth seja null se a config falhar
+                    // Se a configuração estiver faltando, garante que db e auth são nulos
+                    db = null;
+                    auth = null; 
                 }
             } catch (e) {
                 console.error("ERRO: Falha ao inicializar o Firebase. Verifique o JSON de configuração:", e);
+                db = null;
                 auth = null;
             }
 
