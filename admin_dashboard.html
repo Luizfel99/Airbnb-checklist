@@ -120,6 +120,8 @@
             }
         } catch (e) {
             console.error("ERRO: Falha ao inicializar o Firebase. Verifique o JSON de configuração:", e);
+            // Definir auth como null em caso de falha de inicialização
+            auth = null;
         }
         
         if (typeof __app_id !== 'undefined') {
@@ -431,7 +433,7 @@
         async function setupAuthAndListen() {
             if (!auth) {
                 // Mensagem de erro aprimorada
-                authStatusEl.textContent = "ERRO FATAL: Falha na inicialização do Firebase Auth. Verifique a configuração do ambiente ou recarregue a página.";
+                authStatusEl.textContent = "ERRO FATAL: Falha de Configuração. O Firebase Auth não foi inicializado corretamente (Faltam variáveis de ambiente).";
                 authStatusEl.className = "text-sm font-bold text-red-600";
                 loadingIndicator.classList.add('hidden');
                 emptyState.classList.remove('hidden');
