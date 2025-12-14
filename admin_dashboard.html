@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Acompanhamento - ADMIN</title>
-    <!-- Tailwind CSS CDN - Usado para prototipagem rápida. -->
+    <title>Painel de Acompanhamento de Checklists</title>
+    <!-- Tailwind CSS CDN - ATENÇÃO: O CDN não é recomendado para produção. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Custom styles */
@@ -31,17 +31,8 @@
         
         <!-- Header -->
         <header class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas (ADMIN)</h1>
-            
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <p class="text-gray-600 mb-3 sm:mb-0">Visualização em tempo real dos Checklists finalizados e enviados.</p>
-                
-                <!-- ATALHO ADICIONADO PARA O CHECKLIST DO CLEANER (index.html) -->
-                <a href="index.html" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200 shadow-md">
-                    Ir para Checklist (Cleaner)
-                </a>
-            </div>
-
+            <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas</h1>
+            <p class="text-gray-600">Visualização em tempo real dos Checklists finalizados e enviados.</p>
             <div id="auth-status" class="mt-3 text-sm font-medium text-gray-500">Conectando ao banco de dados...</div>
         </header>
 
@@ -94,19 +85,17 @@
         // --- FIREBASE IMPORTS ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query, setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         
-        setLogLevel('Debug'); // Enable debug logging for Firestore
-
-        // --- GLOBAL FIREBASE VARIABLES (Declaradas no escopo do módulo) ---
+        // --- GLOBAL FIREBASE VARIABLES ---
         let db;
         let auth;
         let isAuthReady = false;
         let appId = 'default-app-id';
-        const SUBMITTED_COLLECTION = 'submittedChecklists'; // MUST MATCH the collection used in index.html
-        let currentChecklistData = null; // Used for single-entry export
+        const SUBMITTED_COLLECTION = 'submittedChecklists';
+        let currentChecklistData = null; 
 
-        // --- DOM References (Declaradas globalmente, atribuídas em initializeDOMReferences) ---
+        // --- DOM References (Assigned in initializeDOMReferences) ---
         let authStatusEl;
         let loadingIndicator;
         let checklistsList;
@@ -115,17 +104,27 @@
         let modalContentDetails;
         let closeModalBtn;
         let exportSingleBtn;
-        
+
+
+        // Initialize Firebase (Safety check for environment variables)
+        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+            try {
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+            } catch (e) {
+                console.error("Firebase initialization failed:", e);
+            }
+        }
         if (typeof __app_id !== 'undefined') {
             appId = __app_id;
         }
-
 
         /**
          * Inicializa as referências DOM e verifica se os elementos críticos existem.
          */
         function initializeDOMReferences() {
-            // Tentativa de inicialização das referências
             authStatusEl = document.getElementById('auth-status');
             loadingIndicator = document.getElementById('loading-indicator');
             checklistsList = document.getElementById('checklists-list');
@@ -135,48 +134,15 @@
             closeModalBtn = document.getElementById('close-modal-btn');
             exportSingleBtn = document.getElementById('export-single-btn');
 
-            // VERIFICAÇÃO CRÍTICA
-            if (!authStatusEl || !checklistsList || !loadingIndicator || !detailsModal || !closeModalBtn) {
-                const errorMsg = "ERRO CRÍTICO: Falha na inicialização do Painel. Elementos HTML essenciais (Status, Lista, Modal) ausentes.";
-                console.error(errorMsg, { authStatusEl, checklistsList, loadingIndicator, detailsModal, closeModalBtn });
-                
-                // Tenta escrever o erro na área de status
+            if (!authStatusEl || !checklistsList || !loadingIndicator) {
+                const errorMsg = "ERRO CRÍTICO: Falha na inicialização do Painel. Elementos HTML ausentes.";
                 if (authStatusEl) {
                     authStatusEl.textContent = errorMsg;
                     authStatusEl.className = "text-sm font-medium text-red-600 font-bold";
                 }
+                console.error(errorMsg);
                 return false;
             }
-
-            // --- Event Listeners do Modal (Configurados apenas após a checagem DOM) ---
-            function hideDetailsModal() {
-                detailsModal.classList.add('hidden');
-                currentChecklistData = null;
-            }
-
-            closeModalBtn.addEventListener('click', hideDetailsModal);
-
-            exportSingleBtn.addEventListener('click', () => {
-                if (currentChecklistData) {
-                    exportToCSV(currentChecklistData.data);
-                }
-            });
-
-            // Fechar ao clicar fora do modal (no backdrop)
-            detailsModal.addEventListener('click', (e) => {
-                if (e.target === detailsModal) {
-                    hideDetailsModal();
-                }
-            });
-
-            // Fechar com a tecla ESC
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !detailsModal.classList.contains('hidden')) {
-                    hideDetailsModal();
-                }
-            });
-            // --- Fim dos Event Listeners do Modal ---
-
             return true;
         }
 
@@ -186,13 +152,12 @@
          */
         function getSubmittedCollectionRef() {
             // Path: /artifacts/{appId}/public/data/submittedChecklists
+            if (!db) return null;
             return collection(db, 'artifacts', appId, 'public', 'data', SUBMITTED_COLLECTION);
         }
 
         /**
          * Converte a data ISO string para formato legível.
-         * @param {string} isoString 
-         * @returns {string} Data e hora formatadas
          */
         function formatSubmissionDate(isoString) {
             if (!isoString) return 'N/A';
@@ -208,7 +173,6 @@
 
         /**
          * Renderiza a lista de checklists.
-         * @param {Array<Object>} checklists - Lista de documentos do Firestore.
          */
         function renderChecklists(checklists) {
             loadingIndicator.classList.add('hidden');
@@ -256,8 +220,22 @@
         }
 
         /**
+         * Estrutura de tarefas para reconstrução dos detalhes.
+         * Deve ser idêntica à estrutura do index.html para correlacionar IDs.
+         */
+        const checklistStructure = [
+            { id: 'gerais', title: "🏡 ÁREAS COMUNS E GERAIS", tasks: [ "Coletar lixo...", "Limpar espelhos...", "Limpar/Desinfetar interruptores...", "Aspirar/Varrer...", "Desinfetar superfícies...", "Ventilar o ambiente.", "Remover teias..." ] },
+            { id: 'sala', title: "🛋️ SALA DE ESTAR", tasks: [ "Limpar e organizar mesas...", "Limpar a televisão...", "Aspirar ou limpar sofás...", "Limpar rodapés." ] },
+            { id: 'quartos', tasks: [ "Trocar roupas de cama...", "Fazer as camas.", "2 toalhas de banho...", "Sacola de lixo...", "Limpar mesas de cabeceira...", "Limpar espelhos...", "Aspirar ou varrer o chão.", "Limpar dentro do guarda-roupa..." ] },
+            { id: 'banheiros', tasks: [ "Limpar e desinfetar vasos...", "Limpar pias...", "Limpar espelhos.", "Limpar chuveiro...", "Trocar toalhas.", "Limpar o chão.", "Reabastecer papel...", "Sacola de lixo..." ] },
+            { id: 'cozinha', tasks: [ "Limpar a pia.", "Limpar bancadas...", "1 papel toalha...", "No mínimo 5 sacolas...", "Limpar fogão e forno...", "Limpar micro-ondas...", "Esvaziar e limpar a geladeira.", "Limpar a lava-louças...", "Limpar armários e gavetas...", "Lavar a louça e guardar.", "Limpar o chão.", "Reabastecer produtos...", "Encher reservatório de água..." ] },
+            { id: 'servico', tasks: [ "Limpar máquina de lavar...", "Limpar secadora...", "Limpar tanque/pia...", "Organizar produtos...", "Limpar o chão." ] },
+            { id: 'externa', tasks: [ "Varrer ou lavar o chão.", "Limpar móveis...", "Remover teias de aranha.", "Regar plantas...", "Limpar Churrasqueira..." ] },
+            { id: 'finalizacao', tasks: [ "Verificar se todos os cômodos...", "Verificar gavetas e armários...", "Reabastecer itens de cortesia...", "Repor: 2 águas...", "Repor: 2 chocolates...", "Repor: 1 Vinho...", "Ajustar a temperatura...", "Acender luzes...", "Deixar uma nota de boas-vindas...", "Verificar e notificar suprimentos..." ] }
+        ];
+
+        /**
          * Exibe o modal com os detalhes completos do checklist.
-         * @param {Object} data - Dados completos do checklist submetido.
          */
         function showDetailsModal(data) {
             const metadata = data.metadata || {};
@@ -277,62 +255,29 @@
                 <ul class="task-detail-list bg-white p-4 rounded-lg border max-h-80 overflow-y-auto">
             `;
 
-            // Reconstroi a estrutura original (usando a estrutura fixa do checklist original como fallback para nomes)
-            const checklistStructure = [
-                // Estrutura simplificada do checklist original (apenas para obter os nomes das tarefas)
-                { id: 'gerais', title: "🏡 ÁREAS COMUNS E GERAIS", tasks: [ "Coletar lixo...", "Limpar espelhos...", "Limpar/Desinfetar interruptores...", "Aspirar/Varrer...", "Desinfetar superfícies...", "Ventilar o ambiente.", "Remover teias..." ] },
-                { id: 'sala', title: "🛋️ SALA DE ESTAR", tasks: [ "Limpar e organizar mesas...", "Limpar a televisão...", "Aspirar ou limpar sofás...", "Limpar rodapés." ] },
-                { id: 'quartos', title: "🛏️ QUARTOS", tasks: [ "Trocar roupas de cama...", "Fazer as camas.", "2 toalhas de banho...", "Sacola de lixo...", "Limpar mesas de cabeceira...", "Limpar espelhos...", "Aspirar ou varrer o chão.", "Limpar dentro do guarda-roupa..." ] },
-                { id: 'banheiros', title: "🚿 BANHEIROS", tasks: [ "Limpar e desinfetar vasos...", "Limpar pias...", "Limpar espelhos.", "Limpar chuveiro...", "Trocar toalhas.", "Limpar o chão.", "Reabastecer papel...", "Sacola de lixo..." ] },
-                { id: 'cozinha', title: "🍽️ COZINHA", tasks: [ "Limpar a pia.", "Limpar bancadas...", "1 papel toalha...", "No mínimo 5 sacolas...", "Limpar fogão e forno...", "Limpar micro-ondas...", "Esvaziar e limpar a geladeira.", "Limpar a lava-louças...", "Limpar armários e gavetas...", "Lavar a louça e guardar.", "Limpar o chão.", "Reabastecer produtos...", "Encher reservatório de água..." ] },
-                { id: 'servico', title: "⚙️ ÁREAS DE SERVIÇO/LAVANDERIA", tasks: [ "Limpar máquina de lavar...", "Limpar secadora...", "Limpar tanque/pia...", "Organizar produtos...", "Limpar o chão." ] },
-                { id: 'externa', title: "🌳 VARANDA / ÁREA EXTERNA", tasks: [ "Varrer ou lavar o chão.", "Limpar móveis...", "Remover teias de aranha.", "Regar plantas...", "Limpar Churrasqueira..." ] },
-                { id: 'finalizacao', title: "✅ FINALIZAÇÃO", tasks: [ "Verificar se todos os cômodos...", "Verificar gavetas e armários...", "Reabastecer itens de cortesia...", "Repor: 2 águas...", "Repor: 2 chocolates...", "Repor: 1 Vinho...", "Ajustar a temperatura...", "Acender luzes...", "Deixar uma nota de boas-vindas...", "Verificar e notificar suprimentos..." ] }
-            ];
-
-            // Cria um mapa de ID de tarefa para o nome da tarefa
             const taskMap = {};
-            
-            // Itera sobre as tarefas salvas (e as ordena para exibição mais limpa)
-            const sortedTaskIds = Object.keys(tasks).sort();
-
-            // Renderiza as seções e tarefas
             checklistStructure.forEach(section => {
-                let sectionTasksHtml = '';
-                let hasTasksInSection = false;
-
-                // Cria o mapeamento de tasks por seção
                 section.tasks.forEach((taskName, index) => {
-                    const taskId = `${section.id}-${index}`;
-                    taskMap[taskId] = taskName;
-                    
-                    // Verifica se esta tarefa existe no documento submetido
-                    if (tasks[taskId]) {
-                        hasTasksInSection = true;
-                        const task = tasks[taskId];
-                        const taskNameForDisplay = taskMap[taskId];
-                        
-                        // MELHORIA: Adiciona ícone e cor
-                        const status = task.status ? 
-                            '<span class="text-green-600 font-extrabold ml-2">✔️ FEITO</span>' : 
-                            '<span class="text-red-600 font-extrabold ml-2">❌ FALTOU</span>';
-                        const obs = task.observation ? `<br><span class="text-xs italic text-gray-500 block pl-4">Observação: ${task.observation}</span>` : '';
-
-                        sectionTasksHtml += `
-                            <li>
-                                <span class="text-gray-900">${taskNameForDisplay}</span>: ${status}
-                                ${obs}
-                            </li>
-                        `;
-                    }
+                    taskMap[`${section.id}-${index}`] = taskName;
                 });
-                
-                // Se houver tarefas da seção no documento, renderiza o título e as tarefas
-                if (hasTasksInSection) {
-                    html += `<li class="font-bold text-sky-700 bg-gray-100 px-2 py-1 mt-4 mb-2">${section.title || section.id.toUpperCase()}</li>`;
-                    html += sectionTasksHtml;
-                }
             });
+
+            // Itera sobre as tarefas salvas
+            for (const taskId in tasks) {
+                const task = tasks[taskId];
+                const taskName = taskMap[taskId] || `Tarefa ID: ${taskId}`;
+                const status = task.status ? 
+                    '<span class="text-green-600 font-bold">FEITO</span>' : 
+                    '<span class="text-red-600 font-bold">FALTOU</span>';
+                const obs = task.observation ? `<br><span class="text-xs italic text-gray-500">Obs: ${task.observation}</span>` : '';
+
+                html += `
+                    <li>
+                        <span class="text-gray-900">${taskName}</span>: ${status}
+                        ${obs}
+                    </li>
+                `;
+            }
 
             html += `</ul>`;
             
@@ -342,72 +287,47 @@
 
         /**
          * Exporta os dados de uma única submissão para CSV.
-         * @param {Object} data - Dados completos do checklist submetido.
          */
         function exportToCSV(data) {
             const metadata = data.metadata || {};
             const tasks = data.tasks || {};
             const submittedAt = formatSubmissionDate(data.submittedAt);
 
-            // Usa o ponto e vírgula como separador para compatibilidade com Excel em português
             let csvContent = "data:text/csv;charset=utf-8,";
-            const SEPARATOR = ';';
             
-            // Função auxiliar para sanitizar strings em CSV
-            const sanitize = (str) => `"${String(str || '').replace(/"/g, '""').replace(/[\n\r]/g, ' ').trim()}"`;
-
             // 1. Metadata
             csvContent += "Metadados\n";
-            csvContent += `Propriedade${SEPARATOR}${sanitize(metadata.propriedade)}\n`;
-            csvContent += `Data do Serviço${SEPARATOR}${sanitize(metadata.data)}\n`;
-            csvContent += `Cleaner${SEPARATOR}${sanitize(metadata.cleaner)}\n`;
-            csvContent += `Submetido Em${SEPARATOR}${sanitize(submittedAt)}\n\n`;
+            csvContent += `Propriedade,${metadata.propriedade || ""}\n`;
+            csvContent += `Data do Serviço,${metadata.data || ""}\n`;
+            csvContent += `Cleaner,${metadata.cleaner || ""}\n`;
+            csvContent += `Submetido Em,${submittedAt}\n\n`;
 
             // 2. Header
-            csvContent += `Tarefa${SEPARATOR}Status${SEPARATOR}Observações\n`;
+            csvContent += `Tarefa,Status,Observações\n`;
 
-            // 3. Task Data Mapping
-            const checklistStructure = [
-                { id: 'gerais', title: "ÁREAS COMUNS E GERAIS", tasks: [ "Coletar lixo...", "Limpar espelhos...", "Limpar/Desinfetar interruptores...", "Aspirar/Varrer...", "Desinfetar superfícies...", "Ventilar o ambiente.", "Remover teias..." ] },
-                { id: 'sala', title: "SALA DE ESTAR", tasks: [ "Limpar e organizar mesas...", "Limpar a televisão...", "Aspirar ou limpar sofás...", "Limpar rodapés." ] },
-                { id: 'quartos', title: "QUARTOS", tasks: [ "Trocar roupas de cama...", "Fazer as camas.", "2 toalhas de banho...", "Sacola de lixo...", "Limpar mesas de cabeceira...", "Limpar espelhos...", "Aspirar ou varrer o chão.", "Limpar dentro do guarda-roupa..." ] },
-                { id: 'banheiros', title: "BANHEIROS", tasks: [ "Limpar e desinfetar vasos...", "Limpar pias...", "Limpar espelhos.", "Limpar chuveiro...", "Trocar toalhas.", "Limpar o chão.", "Reabastecer papel...", "Sacola de lixo..." ] },
-                { id: 'cozinha', title: "COZINHA", tasks: [ "Limpar a pia.", "Limpar bancadas...", "1 papel toalha...", "No mínimo 5 sacolas...", "Limpar fogão e forno...", "Limpar micro-ondas...", "Esvaziar e limpar a geladeira.", "Limpar a lava-louças...", "Limpar armários e gavetas...", "Lavar a louça e guardar.", "Limpar o chão.", "Reabastecer produtos...", "Encher reservatório de água..." ] },
-                { id: 'servico', title: "ÁREAS DE SERVIÇO/LAVANDERIA", tasks: [ "Limpar máquina de lavar...", "Limpar secadora...", "Limpar tanque/pia...", "Organizar produtos...", "Limpar o chão." ] },
-                { id: 'externa', title: "VARANDA / ÁREA EXTERNA", tasks: [ "Varrer ou lavar o chão.", "Limpar móveis...", "Remover teias de aranha.", "Regar plantas...", "Limpar Churrasqueira..." ] },
-                { id: 'finalizacao', title: "FINALIZAÇÃO", tasks: [ "Verificar se todos os cômodos...", "Verificar gavetas e armários...", "Reabastecer itens de cortesia...", "Repor: 2 águas...", "Repor: 2 chocolates...", "Repor: 1 Vinho...", "Ajustar a temperatura...", "Acender luzes...", "Deixar uma nota de boas-vindas...", "Verificar e notificar suprimentos..." ] }
-            ];
-
+            // 3. Task Data
             const taskMap = {};
             checklistStructure.forEach(section => {
-                // Adiciona o título da seção como uma linha no CSV
-                csvContent += `\n${sanitize(`== SEÇÃO: ${section.title} ==`)}\n`; 
                 section.tasks.forEach((taskName, index) => {
                     taskMap[`${section.id}-${index}`] = taskName;
                 });
             });
 
-            // Itera e formata as tarefas
-            const sortedTaskIds = Object.keys(tasks).sort(); // Ordena para garantir que a ordem da lista seja respeitada
-            
-            sortedTaskIds.forEach(taskId => {
+            for (const taskId in tasks) {
                 const taskState = tasks[taskId];
                 const taskText = taskMap[taskId] || `Tarefa ID: ${taskId}`;
                 
                 const statusText = taskState && taskState.status ? 'FEITO' : 'FALTOU';
-                const observationText = taskState && taskState.observation ? taskState.observation : "";
+                const observationText = (taskState && taskState.observation ? taskState.observation : "").replace(/"/g, '""');
                 
-                // Formata a linha usando o separador e a função de sanitização
-                csvContent += sanitize(taskText) + SEPARATOR + 
-                              sanitize(statusText) + SEPARATOR +
-                              sanitize(observationText) + '\n';
-            });
+                // Formata a linha
+                csvContent += `"${taskText.replace(/[\n\r]/g, ' ').trim()}",` + 
+                              `${statusText},` +
+                              `"${observationText.replace(/[\n\r]/g, ' ').trim()}"\n`;
+            }
 
             // Cria e dispara o download
-            // Adiciona o Byte Order Mark (BOM) para garantir a compatibilidade de UTF-8 no Excel
-            const csvContentWithBOM = '\ufeff' + csvContent; 
-            const encodedUri = encodeURI(csvContentWithBOM);
-
+            const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             
@@ -424,41 +344,18 @@
          * Configura a autenticação e inicia a escuta de dados.
          */
         async function setupAuthAndListen() {
-            // Tenta inicializar o Firebase no escopo do módulo
-            try {
-                if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-                    const firebaseConfig = JSON.parse(__firebase_config);
-                    const app = initializeApp(firebaseConfig);
-                    // Atribui ao escopo do módulo (let db/auth)
-                    db = getFirestore(app);
-                    auth = getAuth(app);
-                    
-                    // Adiciona ao escopo global para depuração, se necessário
-                    window.firebaseDb = db;
-                    window.firebaseAuth = auth;
-
-                } else {
-                    // Se a configuração estiver faltando, garante que db e auth são nulos
-                    db = null;
-                    auth = null; 
-                }
-            } catch (e) {
-                console.error("ERRO: Falha ao inicializar o Firebase. Verifique o JSON de configuração:", e);
-                db = null;
-                auth = null;
-            }
-
             if (!auth) {
-                // Se a inicialização falhou (auth é null)
-                authStatusEl.textContent = "ERRO FATAL: Falha de Configuração. O Firebase Auth não foi inicializado (Verifique se as variáveis de ambiente estão presentes).";
-                authStatusEl.className = "text-sm font-bold text-red-600";
+                authStatusEl.textContent = "ERRO: Firebase Auth não inicializado. (Verifique o console)";
+                authStatusEl.className = "text-sm font-medium text-red-600";
                 loadingIndicator.classList.add('hidden');
                 emptyState.classList.remove('hidden');
                 return;
             }
 
+            authStatusEl.textContent = "Conectando ao sistema...";
+
             try {
-                // 1. Autenticação (Avança apenas se auth for válido)
+                // 1. Autenticação
                 if (typeof __initial_auth_token !== 'undefined') {
                     await signInWithCustomToken(auth, __initial_auth_token);
                 } else {
@@ -474,7 +371,7 @@
                         startRealtimeListener();
                     } else {
                         isAuthReady = false;
-                        authStatusEl.textContent = "ERRO: Conexão com o sistema falhou (Estado de autenticação inválido).";
+                        authStatusEl.textContent = "ERRO: Conexão com o sistema falhou.";
                         authStatusEl.className = "text-sm font-medium text-red-600";
                         loadingIndicator.classList.add('hidden');
                         emptyState.classList.remove('hidden');
@@ -483,8 +380,9 @@
 
             } catch (error) {
                 console.error("Firebase Auth Error:", error);
-                authStatusEl.textContent = `ERRO FATAL: ${error.message}`;
+                authStatusEl.textContent = `ERRO FATAL: Falha na autenticação. ${error.message}`;
                 authStatusEl.className = "text-sm font-medium text-red-600";
+                loadingIndicator.classList.add('hidden');
             }
         }
 
@@ -494,8 +392,13 @@
         function startRealtimeListener() {
             if (!db || !isAuthReady) return;
 
-            // Cria a query para a coleção de checklists submetidos
-            const q = query(getSubmittedCollectionRef());
+            const submittedRef = getSubmittedCollectionRef();
+            if (!submittedRef) {
+                console.error("Referência da coleção Firestore é nula.");
+                return;
+            }
+
+            const q = query(submittedRef);
 
             onSnapshot(q, (snapshot) => {
                 const checklists = [];
@@ -505,14 +408,8 @@
                         data: doc.data()
                     });
                 });
-                
-                // Ordena por data de submissão (mais recente primeiro) para exibição consistente.
-                checklists.sort((a, b) => {
-                    const dateA = new Date(a.data.submittedAt || 0);
-                    const dateB = new Date(b.data.submittedAt || 0);
-                    return dateB - dateA;
-                });
-
+                // Invertendo a ordem para mostrar os mais recentes primeiro
+                checklists.reverse(); 
                 renderChecklists(checklists);
             }, (error) => {
                 console.error("Erro ao receber dados do Firestore:", error);
@@ -522,20 +419,26 @@
             });
         }
         
-        // Start the application with a try/catch wrapper for safety
-        try {
-            // Garante que as referências DOM e os listeners de eventos estão prontos
-            if (initializeDOMReferences()) {
+        // --- Event Listeners ---
+        // (Listeners para o modal)
+        
+        window.addEventListener('DOMContentLoaded', () => {
+             if (initializeDOMReferences()) {
+                
+                closeModalBtn.addEventListener('click', () => {
+                    detailsModal.classList.add('hidden');
+                    currentChecklistData = null;
+                });
+
+                exportSingleBtn.addEventListener('click', () => {
+                    if (currentChecklistData) {
+                        exportToCSV(currentChecklistData.data);
+                    }
+                });
+                
                 setupAuthAndListen();
             }
-        } catch (e) {
-            console.error("ERRO FATAL DURANTE O CARREGAMENTO:", e);
-            const authStatusEl = document.getElementById('auth-status');
-            if (authStatusEl) {
-                authStatusEl.textContent = `ERRO FATAL: Falha na inicialização. Verifique o console.`;
-                authStatusEl.className = "text-sm font-medium text-red-600";
-            }
-        }
+        });
     </script>
 </body>
 </html>
