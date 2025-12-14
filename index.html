@@ -3,140 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bright & Shine Pro - Checklist de Limpeza Airbnb</title>
+    <title>Painel de Acompanhamento de Checklists</title>
     <!-- Tailwind CSS CDN - ATENÇÃO: O CDN não é recomendado para produção. -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom scrollbar for a cleaner look */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #9ca3af; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
-        /* Custom styles for better readability and touch targets */
-        .task-row { transition: background-color 0.15s ease-in-out; }
-        .task-row:hover { background-color: #f3f4f6; }
-        input[type="checkbox"] { width: 1.25rem; height: 1.25rem; cursor: pointer; accent-color: #0ea5e9; }
-        .reset-confirm { background-color: #ef4444 !important; }
+        /* Custom styles */
+        .card-shadow {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s;
+        }
+        .card-shadow:hover {
+            transform: translateY(-2px);
+        }
+        .task-detail-list li {
+            padding: 4px 0;
+            border-bottom: 1px dashed #e5e7eb;
+        }
+        .task-detail-list li:last-child {
+            border-bottom: none;
+        }
     </style>
 </head>
-<body class="bg-gray-50 font-sans antialiased">
+<body class="bg-gray-100 font-sans antialiased">
 
     <!-- Main Container -->
-    <div class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
         
         <!-- Header -->
         <header class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 border-b pb-4">
-                <div class="flex items-center space-x-3 mb-3 sm:mb-0">
-                    <!-- Logo Placeholder -->
-                    <img src="https://placehold.co/40x40/007bff/ffffff?text=BS" alt="Bright & Shine Logo" class="rounded-lg shadow-md">
-                    <div>
-                        <h1 id="title-checklist" class="text-2xl sm:text-3xl font-extrabold text-blue-800"></h1>
-                        <p id="title-service" class="text-md text-gray-700 font-semibold"></p>
-                    </div>
-                </div>
-                <!-- Language Toggle Button -->
-                <button id="lang-toggle-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg shadow transition duration-200 text-sm">
-                    PT/EN
-                </button>
-            </div>
-            
-            <!-- Firebase Status -->
-            <div class="mb-4 text-center">
-                <p id="auth-status" class="text-sm font-medium text-gray-500"></p>
-            </div>
-
-            <!-- Metadata Form -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-gray-700">
-                <div>
-                    <label id="label-propriedade" for="propriedade" class="block text-sm font-medium text-gray-500"></label>
-                    <input type="text" id="propriedade" class="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500" placeholder="">
-                </div>
-                <div>
-                    <label id="label-data" for="data" class="block text-sm font-medium text-gray-500"></label>
-                    <input type="date" id="data" class="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500">
-                </div>
-                <div>
-                    <label id="label-cleaner" for="cleaner" class="block text-sm font-medium text-gray-500"></label>
-                    <input type="text" id="cleaner" class="w-full mt-1 p-2 border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500" placeholder="">
-                </div>
-            </div>
-            <div class="mt-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
-                <button id="save-btn" class="sm:col-span-1 bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200">
-                    <span id="save-text"></span>
-                </button>
-                <button id="export-btn" class="sm:col-span-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200">
-                    <span id="export-text"></span>
-                </button>
-                <button id="reset-btn" class="sm:col-span-1 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200">
-                    <span id="reset-text"></span>
-                </button>
-                <!-- Gemini Feature Button (Indigo for visual contrast) -->
-                <button id="generate-note-btn" class="sm:col-span-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200 opacity-50 cursor-not-allowed" disabled>
-                    <span id="generate-note-text-btn"></span>
-                </button>
-            </div>
-            <p id="message" class="mt-3 text-sm text-center font-medium text-gray-500"></p>
+            <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas</h1>
+            <p class="text-gray-600">Visualização em tempo real dos Checklists finalizados e enviados.</p>
+            <div id="auth-status" class="mt-3 text-sm font-medium text-gray-500">Conectando ao banco de dados...</div>
         </header>
 
-        <!-- Gemini Welcome Note Modal -->
-        <div id="note-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 flex items-center justify-center p-4">
-            <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
-                <h3 id="modal-title" class="text-2xl font-bold text-indigo-600 mb-4 flex items-center"></h3>
+        <!-- Main Content Area: Checklists List -->
+        <div class="bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-xl font-bold text-gray-700 mb-4">Checklists Submetidos</h2>
+            
+            <!-- Loading Indicator -->
+            <div id="loading-indicator" class="text-center py-8">
+                <div class="animate-spin inline-block w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full"></div>
+                <p class="mt-2 text-gray-500">Carregando dados em tempo real...</p>
+            </div>
 
-                <!-- Context Input -->
-                <label id="modal-context-label" for="note-context" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                <textarea id="note-context" rows="3" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 mb-4" placeholder=""></textarea>
+            <!-- List Container -->
+            <div id="checklists-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Data will be injected here -->
+            </div>
 
-                <!-- Generate Button -->
-                <button id="generate-note-action" class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg shadow transition duration-200 flex items-center justify-center mb-4" disabled>
-                    <span id="generate-note-action-text"></span>
-                    <svg id="generate-note-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                </button>
-                
-                <!-- Output -->
-                <label id="modal-output-label" for="generated-note-output" class="block text-sm font-medium text-gray-700 mb-1"></label>
-                <textarea id="generated-note-output" rows="8" readonly class="w-full p-2 border border-gray-200 bg-gray-50 rounded-lg mb-4 text-sm resize-none" placeholder=""></textarea>
-
-                <!-- Action Buttons -->
-                <div class="flex justify-end space-x-3">
-                    <button id="copy-note-btn" class="bg-sky-500 hover:bg-sky-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200">
-                        <span id="copy-note-text"></span>
-                    </button>
-                    <button id="close-note-modal" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm transition duration-200">
-                        <span id="close-modal-text"></span>
-                    </button>
-                </div>
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden text-center py-10 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum Checklist Encontrado</h3>
+                <p class="mt-1 text-sm text-gray-500">Aguardando a primeira submissão...</p>
             </div>
         </div>
-
-        <!-- Checklist Sections Container -->
-        <div id="checklist-container" class="space-y-6">
-            <!-- Sections will be injected here by JavaScript -->
-        </div>
-
     </div>
+
+    <!-- Modal for Full Details -->
+    <div id="details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+            <h3 class="text-2xl font-bold text-sky-600 mb-4 border-b pb-2">Detalhes da Submissão</h3>
+            <div id="modal-content-details" class="space-y-4">
+                <!-- Full data view will be rendered here -->
+            </div>
+            <div class="flex justify-end mt-6 space-x-3">
+                <button id="export-single-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200">
+                    Exportar para CSV
+                </button>
+                <button id="close-modal-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm transition duration-200">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
 
     <script type="module">
         // --- FIREBASE IMPORTS ---
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, setDoc, addDoc, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        // setLogLevel('Debug'); // Enable debug logging for Firestore - Desativado para evitar logs excessivos no GitHub Pages
-
+        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
         // --- GLOBAL FIREBASE VARIABLES ---
         let db;
         let auth;
-        let userId = 'anonymous'; 
         let isAuthReady = false;
         let appId = 'default-app-id';
-        const CHECKLIST_PROGRESS_COLLECTION = 'currentChecklist';
         const SUBMITTED_COLLECTION = 'submittedChecklists';
+        let currentChecklistData = null; 
 
-        // Initialize Firebase (Safely check if environment variables exist, otherwise, leave uninitialized)
+        // --- DOM References (Assigned in initializeDOMReferences) ---
+        let authStatusEl;
+        let loadingIndicator;
+        let checklistsList;
+        let emptyState;
+        let detailsModal;
+        let modalContentDetails;
+        let closeModalBtn;
+        let exportSingleBtn;
+
+
+        // Initialize Firebase (Safety check for environment variables)
         if (typeof __firebase_config !== 'undefined' && __firebase_config) {
             try {
                 const firebaseConfig = JSON.parse(__firebase_config);
@@ -146,268 +116,36 @@
             } catch (e) {
                 console.error("Firebase initialization failed:", e);
             }
-        } else {
-            console.warn("Firebase config not found. Cloud features disabled on this environment (GitHub Pages).");
         }
-
         if (typeof __app_id !== 'undefined') {
             appId = __app_id;
         }
 
-        // --- GEMINI API CONSTANTS ---
-        const API_KEY = ""; 
-        const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${API_KEY}`;
-
-        // --- CHECKLIST CONSTANTS ---
-        const LOCAL_STORAGE_KEY = 'airbnb_cleaning_checklist_data_v2'; 
-        let currentLang = localStorage.getItem('checklist_language') || 'pt';
-        let resetConfirm = false; 
-
-        // --- DOM References (Initialized in initializeDOMReferences) ---
-        let checklistContainer;
-        let propriedadeInput;
-        let noteModal;
-        let generateNoteBtn;
-        let generateNoteAction;
-        let noteContext;
-        let generatedNoteOutput;
-        let generateNoteSpinner;
-        let resetBtn;
-        let saveTextEl; 
-        let exportTextEl; 
-        let resetTextEl; 
-        let generateNoteTextBtnEl; 
-        let authStatusEl;
-        
-        const metadataFields = ['propriedade', 'data', 'cleaner'];
-
-        // --- Translations ---
-        const translations = {
-            pt: {
-                meta_propriedade: "Propriedade",
-                meta_data: "Data",
-                meta_cleaner: "Limpeza (Cleaner)",
-                placeholder_propriedade: "Ex: Apto 101 - Praia",
-                placeholder_cleaner: "Seu Nome",
-                btn_save: "Salvar Progresso (Cloud)",
-                btn_export: "Finalizar e Enviar Dados",
-                btn_reset: "Limpar Checklist",
-                btn_reset_confirm: "CLIQUE NOVAMENTE PARA CONFIRMAR!",
-                btn_generate_note: "Gerar Nota de Boas-Vindas ✨",
-                btn_add_photo: "Adicionar Foto",
-                title_checklist: "CHECKLIST DE LIMPEZA E PREPARAÇÃO AIRBNB",
-                title_service: "Bright & Shine Pro Services",
-                
-                modal_title: "Gerador de Nota de Boas-Vindas ✨",
-                modal_context_label: "Contexto da Nota (Ex: Nome do Hóspede, motivo da estadia, observações):",
-                modal_placeholder_context: "Ex: Olá, Maria! Seja bem-vinda para uma viagem de negócios.",
-                modal_generate_action: "Gerar Mensagem de Boas-Vindas",
-                modal_generating: "Gerando...",
-                modal_output_label: "Nota Sugerida (Copie e use!):",
-                modal_placeholder_output: "A nota gerada aparecerá aqui.",
-                modal_copy: "Copiar Nota",
-                modal_close: "Fechar",
-                status_completed: "COMPLETO",
-                status_pending: "PENDENTE",
-                message_save_auto: "Progresso salvo automaticamente na nuvem.",
-                message_save_manual: "Progresso salvo manualmente!",
-                message_export_success: "Checklist finalizado e enviado com sucesso!",
-                message_reset_success: "Checklist limpo e resetado com sucesso!",
-                message_copy_success: "Nota copiada para a área de transferência!",
-                message_copy_fail: "Falha ao copiar. Por favor, copie manualmente.",
-                message_prop_required: "PREENCHA O NOME DA PROPRIEDADE!",
-                message_generating: "Aguarde, a Nota de Boas-Vindas está sendo gerada pela IA...",
-                message_generation_fail: "Não foi possível gerar a nota. Tente novamente.",
-                message_photo_unsupported_pt: "Esta funcionalidade de upload não está disponível no Canvas. Por favor, lembre-se de tirar fotos obrigatórias para o seu relatório externo.",
-                message_firestore_error: "Erro no Banco de Dados. Cloud Desativado.",
-                auth_status_loading: "Conectando ao sistema...",
-                auth_status_success: "Conectado como: ",
-                auth_status_error: "ERRO: Conexão com o sistema falhou. (Cloud Desativado)",
-                photo_mandatory: "FOTO OBRIGATÓRIA:",
-                label_id: "ID:",
-                label_task: "Tarefa",
-                label_status: "Status",
-                label_obs: "Observações / Detalhes",
-            },
-            en: {
-                meta_propriedade: "Property",
-                meta_data: "Date",
-                meta_cleaner: "Cleaner",
-                placeholder_propriedade: "E.g.: Apt 101 - Beach",
-                placeholder_cleaner: "Your Name",
-                btn_save: "Save Progress (Cloud)",
-                btn_export: "Finalize & Submit Data",
-                btn_reset: "Clear Checklist",
-                btn_reset_confirm: "CLICK AGAIN TO CONFIRM!",
-                btn_generate_note: "Generate Welcome Note ✨",
-                btn_add_photo: "Add Photo",
-                title_checklist: "AIRBNB CLEANING & PREPARATION CHECKLIST",
-                title_service: "Bright & Shine Pro Services",
-                
-                modal_title: "Welcome Note Generator ✨",
-                modal_context_label: "Note Context (E.g.: Guest Name, reason for stay, observations):",
-                modal_placeholder_context: "E.g.: Hi, Maria! Welcome for a business trip.",
-                modal_generate_action: "Generate Welcome Message",
-                modal_generating: "Generating...",
-                modal_output_label: "Suggested Note (Copy and use!):",
-                modal_placeholder_output: "The generated note will appear here.",
-                modal_copy: "Copy Note",
-                modal_close: "Close",
-                status_completed: "COMPLETE",
-                status_pending: "PENDENTE",
-                message_save_auto: "Progress saved automatically to cloud.",
-                message_save_manual: "Progress saved manually!",
-                message_export_success: "Checklist finalized and submitted successfully!",
-                message_reset_success: "Checklist cleared and reset successfully!",
-                message_copy_success: "Note copied to clipboard!",
-                message_copy_fail: "Failed to copy. Please copy manually.",
-                message_prop_required: "PLEASE FILL IN PROPERTY NAME!",
-                message_generating: "Please wait, the Welcome Note is being generated by AI...",
-                message_generation_fail: "Could not generate note. Try again.",
-                message_photo_unsupported_en: "This upload feature is not supported in Canvas. Please remember to take mandatory photos for your external report.",
-                message_firestore_error: "Database Error. Cloud Disabled.",
-                auth_status_loading: "Connecting to system...",
-                auth_status_success: "Connected as: ",
-                auth_status_error: "ERROR: System connection failed. (Cloud Disabled)",
-                photo_mandatory: "MANDATORY PHOTO:",
-                label_id: "ID:",
-                label_task: "Task",
-                label_status: "Status",
-                label_obs: "Observations / Details",
-            }
-        };
-
-        // --- Checklist Data (now containing both languages) ---
-        const checklistData = [
-            {
-                id: 'gerais',
-                title: { pt: "🏡 ÁREAS COMUNS E GERAIS", en: "🏡 GENERAL & COMMON AREAS" },
-                mandatoryPhoto: { pt: "Vista geral da área.", en: "General view of the area." },
-                tasks: [
-                    { pt: "Coletar lixo de todos os cômodos.", en: "Collect trash from all rooms." },
-                    { pt: "Limpar espelhos e superfícies de vidro.", en: "Clean mirrors and glass surfaces." },
-                    { pt: "Limpar/Desinfetar interruptores e maçanetas.", en: "Clean/Disinfect switches and door handles." },
-                    { pt: "Aspirar/Varrer e passar pano em todos os pisos.", en: "Vacuum/Sweep and mop all floors." },
-                    { pt: "Desinfetar superfícies de toque frequente.", en: "Disinfect high-touch surfaces." },
-                    { pt: "Ventilar o ambiente.", in: "Ventilate the environment." },
-                    { pt: "Remover teias de aranha dos cantos e tetos (se aplicável).", en: "Remove cobwebs from corners and ceilings (if applicable)." }
-                ]
-            },
-            {
-                id: 'sala',
-                title: { pt: "🛋️ SALA DE ESTAR", en: "🛋️ LIVING ROOM" },
-                mandatoryPhoto: { pt: "Vista geral do cômodo.", en: "General view of the room." },
-                tasks: [
-                    { pt: "Limpar e organizar mesas e prateleiras.", en: "Clean and organize tables and shelves." },
-                    { pt: "Limpar a televisão e outros eletrônicos.", in: "Clean the television and other electronics." },
-                    { pt: "Aspirar ou limpar sofás e poltronas.", en: "Vacuum or clean sofas and armchairs." },
-                    { pt: "Limpar rodapés.", en: "Clean baseboards." }
-                ]
-            },
-            {
-                id: 'quartos',
-                title: { pt: "🛏️ QUARTOS", en: "🛏️ BEDROOMS" },
-                mandatoryPhoto: { pt: "Cama feita e vista geral do quarto.", en: "Made bed and general view of the room." },
-                tasks: [
-                    { pt: "Trocar roupas de cama (lençóis, fronhas, etc.).", en: "Change bedding (sheets, pillowcases, etc.)." },
-                    { pt: "Fazer as camas.", en: "Make the beds." },
-                    { pt: "2 toalhas de banho por cama (rolinhos) arrumadas.", en: "2 bath towels per bed (rolled) arranged." },
-                    { pt: "Sacola de lixo nas lixeiras dos quartos.", en: "Trash bag in room bins." },
-                    { pt: "Limpar mesas de cabeceira e luminárias.", en: "Clean bedside tables and lamps." },
-                    { pt: "Limpar espelhos e superfícies de vidro.", en: "Clean mirrors and glass surfaces." },
-                    { pt: "Aspirar ou varrer o chão.", en: "Vacuum or sweep the floor." },
-                    { pt: "Limpar dentro do guarda-roupa/armário (se houver).", en: "Clean inside the wardrobe/closet (if applicable)." }
-                ]
-            },
-            {
-                id: 'banheiros',
-                title: { pt: "🛁 BANHEIROS", en: "🛁 BATHROOMS" },
-                mandatoryPhoto: { pt: "Vaso sanitário e pia limpos.", en: "Clean toilet and sink." },
-                tasks: [
-                    { pt: "Limpar e desinfetar vasos sanitários.", en: "Clean and disinfect toilets." },
-                    { pt: "Limpar pias e bancadas.", in: "Clean sinks and countertops." },
-                    { pt: "Limpar espelhos.", en: "Clean mirrors." },
-                    { pt: "Limpar chuveiro/banheira e box.", en: "Clean shower/tub and glass enclosure." },
-                    { pt: "Trocar toalhas.", en: "Change towels." },
-                    { pt: "Limpar o chão.", en: "Clean the floor." },
-                    { pt: "Reabastecer papel higiênico e sabonete.", en: "Restock toilet paper and soap." },
-                    { pt: "Sacola de lixo nas lixeiras.", en: "Trash bag in bins." },
-                ]
-            },
-            {
-                id: 'cozinha',
-                title: { pt: "🍽️ COZINHA", en: "🍽️ KITCHEN" },
-                mandatoryPhoto: { pt: "Pia limpa e bancada organizada.", en: "Clean sink and organized counter." },
-                tasks: [
-                    { pt: "Limpar a pia.", en: "Clean the sink." },
-                    { pt: "Limpar bancadas e superfícies.", en: "Clean countertops and surfaces." },
-                    { pt: "1 papel toalha na bancada e 1 extra em baixo da pia.", en: "1 paper towel on the counter and 1 extra under the sink." },
-                    { pt: "No mínimo 5 sacolas de lixo extra em baixo da pia.", en: "Minimum 5 extra trash bags under the sink." },
-                    { pt: "Limpar fogão e forno (interior e exterior).", en: "Clean stove and oven (inside and out)." },
-                    { pt: "Limpar micro-ondas (dentro e fora).", en: "Clean microwave (inside and out)." },
-                    { pt: "Esvaziar e limpar a geladeira.", en: "Empty and clean the refrigerator." },
-                    { pt: "Limpar a lava-louças (se houver).", en: "Clean the dishwasher (if applicable)." },
-                    { pt: "Limpar armários e gavetas (externamente).", en: "Clean cabinets and drawers (externally)." },
-                    { pt: "Lavar a louça e guardar.", en: "Wash dishes and put them away." },
-                    { pt: "Limpar o chão.", en: "Clean the floor." },
-                    { pt: "Reabastecer produtos de limpeza da cozinha.", en: "Restock kitchen cleaning products." },
-                    { pt: "Encher reservatório de água da cafeteira (se aplicável).", en: "Fill coffee maker water reservoir (if applicable)." }
-                ]
-            },
-            {
-                id: 'servico',
-                title: { pt: "⚙️ ÁREAS DE SERVIÇO/LAVANDERIA (Se aplicável)", en: "⚙️ UTILITY ROOM/LAUNDRY (If applicable)" },
-                mandatoryPhoto: { pt: "Vista geral da lavanderia.", en: "General view of the laundry room." },
-                tasks: [
-                    { pt: "Limpar máquina de lavar (dentro e fora).", en: "Clean washing machine (inside and out)." },
-                    { pt: "Limpar secadora (filtro e interior).", en: "Clean dryer (filter and interior)." },
-                    { pt: "Limpar tanque/pia de serviço.", en: "Clean utility sink." },
-                    { pt: "Organizar produtos de limpeza.", en: "Organize cleaning products." },
-                    { pt: "Limpar o chão.", en: "Clean the floor." }
-                ]
-            },
-            {
-                id: 'externa',
-                title: { pt: "🌳 VARANDA / ÁREA EXTERNA (Se aplicável)", en: "🌳 BALCONY / EXTERNAL AREA (If applicable)" },
-                mandatoryPhoto: { pt: "Vista geral da área externa.", en: "General view of the external area." },
-                tasks: [
-                    { pt: "Varrer ou lavar o chão.", en: "Sweep or wash the floor." },
-                    { pt: "Limpar móveis de área externa.", en: "Clean outdoor furniture." },
-                    { pt: "Remover teias de aranha.", en: "Remove cobwebs." },
-                    { pt: "Regar plantas (se houver).", en: "Water plants (if applicable)." },
-                    { pt: "Limpar Churrasqueira/Grelha (se houver).", en: "Clean BBQ/Grill (if applicable)." }
-                ]
-            },
-            {
-                id: 'finalizacao',
-                title: { pt: "✅ FINALIZAÇÃO", en: "✅ FINALIZATION" },
-                mandatoryPhoto: { pt: "Porta da frente e vista geral da propriedade.", en: "Front door and general view of the property." },
-                tasks: [
-                    { pt: "Verificar se todos os cômodos estão limpos.", en: "Verify that all rooms are clean." },
-                    { pt: "Verificar gavetas e armários por itens esquecidos de hóspedes.", en: "Check drawers and cabinets for forgotten guest items." },
-                    { pt: "Reabastecer itens de cortesia. (Café, Chá, Açúcar, Azeite, Sal, etc.)", en: "Restock courtesy items. (Coffee, Tea, Sugar, Oil, Salt, etc.)" },
-                    { pt: "Repor: 2 águas (se aplicável)", en: "Restock: 2 waters (if applicable)" },
-                    { pt: "Repor: 2 chocolates por cama (se aplicável)", en: "Restock: 2 chocolates per bed (if applicable)" },
-                    { pt: "Repor: 1 Vinho (se aplicável)", en: "Restock: 1 Wine (if applicable)" },
-                    { pt: "Ajustar a temperatura do ambiente. (Ar Condicionado / Aquecedor)", en: "Adjust ambient temperature. (Air Conditioner / Heater)" },
-                    { pt: "Acender luzes (se necessário).", en: "Turn on lights (if necessary)." },
-                    { pt: "Deixar uma nota de boas-vindas (opcional).", en: "Leave a welcome note (optional)." },
-                    { pt: "Verificar e notificar suprimentos baixos.", en: "Check and notify low supplies." }
-                ]
-            }
-        ];
-
-
-        // --- Core Functions ---
-
         /**
-         * Returns the Firestore document path for the current user's progress.
+         * Inicializa as referências DOM e verifica se os elementos críticos existem.
          */
-        function getProgressDocRef() {
-            // Path: /artifacts/{appId}/users/{userId}/currentChecklist/progress
-            if (!db) return null;
-            return doc(db, 'artifacts', appId, 'users', userId, CHECKLIST_PROGRESS_COLLECTION, 'progress');
+        function initializeDOMReferences() {
+            authStatusEl = document.getElementById('auth-status');
+            loadingIndicator = document.getElementById('loading-indicator');
+            checklistsList = document.getElementById('checklists-list');
+            emptyState = document.getElementById('empty-state');
+            detailsModal = document.getElementById('details-modal');
+            modalContentDetails = document.getElementById('modal-content-details');
+            closeModalBtn = document.getElementById('close-modal-btn');
+            exportSingleBtn = document.getElementById('export-single-btn');
+
+            if (!authStatusEl || !checklistsList || !loadingIndicator) {
+                const errorMsg = "ERRO CRÍTICO: Falha na inicialização do Painel. Elementos HTML ausentes.";
+                if (authStatusEl) {
+                    authStatusEl.textContent = errorMsg;
+                    authStatusEl.className = "text-sm font-medium text-red-600 font-bold";
+                }
+                console.error(errorMsg);
+                return false;
+            }
+            return true;
         }
+
 
         /**
          * Returns the Firestore collection reference for public submitted data.
@@ -418,645 +156,203 @@
             return collection(db, 'artifacts', appId, 'public', 'data', SUBMITTED_COLLECTION);
         }
 
-        function updateUIText(lang) {
-            const t = translations[lang];
-
-            // Header Text
-            document.getElementById('title-checklist').textContent = t.title_checklist;
-            document.getElementById('title-service').textContent = t.title_service;
-
-            // Metadata Labels & Placeholders
-            document.getElementById('label-propriedade').textContent = t.meta_propriedade + ':';
-            document.getElementById('propriedade').placeholder = t.placeholder_propriedade;
-            document.getElementById('label-data').textContent = t.meta_data + ':';
-            document.getElementById('label-cleaner').textContent = t.meta_cleaner + ':';
-            document.getElementById('cleaner').placeholder = t.placeholder_cleaner;
-
-            // Button Texts (Using explicit IDs for robustness)
-            saveTextEl.textContent = t.btn_save;
-            exportTextEl.textContent = t.btn_export;
-            resetTextEl.textContent = t.btn_reset;
-            generateNoteTextBtnEl.textContent = t.btn_generate_note;
-
-            // Modal Texts
-            document.getElementById('modal-title').textContent = t.modal_title;
-            document.getElementById('modal-context-label').textContent = t.modal_context_label;
-            document.getElementById('note-context').placeholder = t.modal_placeholder_context;
-            document.getElementById('generate-note-action').querySelector('span').textContent = t.modal_generate_action;
-            document.getElementById('modal-output-label').textContent = t.modal_output_label;
-            document.getElementById('generated-note-output').placeholder = t.modal_placeholder_output;
-            document.getElementById('copy-note-btn').querySelector('span').textContent = t.modal_copy;
-            document.getElementById('close-note-modal').querySelector('span').textContent = t.modal_close;
-
-            // Re-render checklist content for translated tasks
-            renderChecklist(lang);
-        }
-
-        // Language Toggle Logic
-        function toggleLanguage() {
-            currentLang = currentLang === 'pt' ? 'en' : 'pt';
-            localStorage.setItem('checklist_language', currentLang);
-            updateUIText(currentLang);
-        }
-
         /**
-         * Loads checklist state from Firestore for the current user.
+         * Converte a data ISO string para formato legível.
          */
-        async function loadChecklistState() {
-            if (!isAuthReady || !db) return {};
-
-            try {
-                const docRef = getProgressDocRef();
-                if (!docRef) return {};
-
-                const docSnap = await getDoc(docRef);
-
-                if (docSnap.exists()) {
-                    console.log("Progress loaded from Firestore.");
-                    return docSnap.data();
-                } else {
-                    console.log("No saved progress found in Firestore.");
-                    return {};
-                }
-            } catch (error) {
-                console.error("Error loading checklist from Firestore:", error);
-                displayMessage(translations[currentLang].message_firestore_error, "text-red-600");
-                return {};
-            }
-        }
-
-        /**
-         * Saves current checklist state to Firestore for progress tracking.
-         */
-        async function saveChecklistState() {
-            if (!isAuthReady || !db) {
-                displayMessage(translations[currentLang].message_firestore_error, "text-red-600");
-                return;
-            }
-
-            const state = getCurrentChecklistState();
-            
-            try {
-                const docRef = getProgressDocRef();
-                if (!docRef) return;
-                
-                await setDoc(docRef, state);
-                displayMessage(translations[currentLang].message_save_auto, "text-sky-500");
-                resetConfirm = false; 
-                resetBtn.classList.remove('reset-confirm');
-                resetTextEl.textContent = translations[currentLang].btn_reset;
-            } catch (error) {
-                console.error("Error saving checklist to Firestore:", error);
-                displayMessage(translations[currentLang].message_firestore_error, "text-red-600");
-            }
-        }
-
-        /**
-         * Submits the finalized checklist to the public collection.
-         */
-        async function submitChecklist() {
-            if (!isAuthReady || !db) {
-                displayMessage(translations[currentLang].auth_status_error, "text-red-600");
-                return;
-            }
-
-            const state = getCurrentChecklistState();
-            const propertyName = state.metadata.propriedade;
-            
-            if (!propertyName) {
-                displayMessage(translations[currentLang].message_prop_required, "text-red-600");
-                return;
-            }
-
-            try {
-                const submittedCollectionRef = getSubmittedCollectionRef();
-                if (!submittedCollectionRef) return;
-
-                const submissionData = {
-                    ...state,
-                    submittedAt: new Date().toISOString(),
-                    submittedBy: userId,
-                    appId: appId,
-                    status: 'FINALIZED'
-                };
-
-                const docRef = await addDoc(submittedCollectionRef, submissionData);
-                console.log("Checklist submitted successfully. Document ID:", docRef.id);
-                
-                // Clear progress data after successful submission
-                const progressDocRef = getProgressDocRef();
-                if (progressDocRef) {
-                    await setDoc(progressDocRef, {}, { merge: false });
-                }
-
-                // Success message and CSV download trigger
-                displayMessage(translations[currentLang].message_export_success, "text-green-600");
-                
-                // Optional: Automatically trigger CSV download after cloud submission
-                exportToCSV(true); 
-
-            } catch (error) {
-                console.error("Error submitting checklist to Firestore:", error);
-                displayMessage(translations[currentLang].message_firestore_error, "text-red-600");
-            }
-        }
-
-        // Get current state from DOM
-        function getCurrentChecklistState() {
-            const state = {
-                metadata: {},
-                tasks: {}
-            };
-
-            // 1. Get Metadata
-            metadataFields.forEach(id => {
-                const input = document.getElementById(id);
-                if (input) {
-                    state.metadata[id] = input.value;
-                }
+        function formatSubmissionDate(isoString) {
+            if (!isoString) return 'N/A';
+            const date = new Date(isoString);
+            return date.toLocaleDateString('pt-BR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
-
-            // 2. Get Task Status and Observations
-            checklistData.forEach(section => {
-                section.tasks.forEach((task, index) => {
-                    const taskId = `${section.id}-${index}`;
-                    const checkbox = document.getElementById(`check-${taskId}`);
-                    const observation = document.getElementById(`obs-${taskId}`);
-
-                    state.tasks[taskId] = {
-                        status: checkbox ? checkbox.checked : false,
-                        observation: observation ? observation.value : ''
-                    };
-                });
-            });
-
-            return state;
         }
 
-        // Apply loaded state to DOM
-        function applyChecklistState(state) {
-            if (!state) return;
+        /**
+         * Renderiza a lista de checklists.
+         */
+        function renderChecklists(checklists) {
+            loadingIndicator.classList.add('hidden');
+            checklistsList.innerHTML = '';
 
-            // 1. Apply Metadata
-            if (state.metadata) {
-                metadataFields.forEach(id => {
-                    const input = document.getElementById(id);
-                    if (input && state.metadata[id] !== undefined) {
-                        input.value = state.metadata[id];
-                    }
-                });
+            if (checklists.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
             }
 
-            // 2. Apply Task Status and Observations
-            if (state.tasks) {
-                for (const taskId in state.tasks) {
-                    const { status, observation } = state.tasks[taskId];
-                    
-                    const checkbox = document.getElementById(`check-${taskId}`);
-                    const obsInput = document.getElementById(`obs-${taskId}`);
+            emptyState.classList.add('hidden');
 
-                    if (checkbox) {
-                        checkbox.checked = status;
-                    }
-                    if (obsInput) {
-                        obsInput.value = observation;
-                    }
-                }
-            }
-        }
+            checklists.forEach(doc => {
+                const data = doc.data;
+                const metadata = data.metadata || {};
+                const submissionTime = formatSubmissionDate(data.submittedAt);
+                const propertyName = metadata.propriedade || 'Propriedade Sem Nome';
+                const cleanerName = metadata.cleaner || 'Cleaner Anônimo';
 
-        // --- UI Rendering ---
-
-        function renderChecklist(lang = 'pt') {
-            const t = translations[lang];
-            let html = '';
-            checklistData.forEach(section => {
-                const sectionTitle = section.title[lang];
-                const mandatoryPhotoText = section.mandatoryPhoto[lang];
-
-                html += `
-                    <div class="bg-white p-4 rounded-xl shadow-md">
-                        <h2 class="text-xl sm:text-2xl font-bold text-blue-800 mb-4 pb-2 border-b-2 border-blue-100">${sectionTitle}</h2>
+                const cardHtml = `
+                    <div id="card-${doc.id}" class="bg-white p-5 rounded-xl card-shadow border border-gray-200 cursor-pointer hover:border-sky-500" data-doc-id="${doc.id}">
+                        <p class="text-xs font-semibold text-gray-500 mb-1">Submetido em:</p>
+                        <p class="text-sm font-medium text-gray-700 mb-3">${submissionTime}</p>
                         
-                        <div class="hidden sm:grid sm:grid-cols-[1fr_auto_2fr] gap-4 font-semibold text-gray-600 mb-2 border-b border-gray-200 py-1">
-                            <span class="col-span-1">${t.label_task}</span>
-                            <span class="text-center">${t.label_status}</span>
-                            <span class="col-span-1">${t.label_obs}</span>
-                        </div>
+                        <h3 class="text-xl font-bold text-blue-800 truncate mb-1">${propertyName}</h3>
+                        <p class="text-md text-gray-600 mb-4">${cleanerName}</p>
                         
-                        ${section.tasks.map((task, index) => {
-                            const taskId = `${section.id}-${index}`;
-                            const taskText = task[lang];
-                            
-                            // Split task text for formatting (e.g., FINALIZAÇÃO section)
-                            const [mainTask, detail] = taskText.split('. (');
-                            const detailText = detail ? ` <span class="text-sm font-normal text-gray-500">(${detail.replace(')', '')})</span>` : '';
-
-                            return `
-                                <div class="task-row grid grid-cols-1 sm:grid-cols-[1fr_auto_2fr] items-center gap-3 py-3 border-b border-gray-100 last:border-b-0">
-                                    
-                                    <!-- Task Description -->
-                                    <div class="text-gray-700 font-medium col-span-1">
-                                        ${mainTask}${detailText}
-                                    </div>
-
-                                    <!-- Status (Checkbox) -->
-                                    <div class="flex justify-start sm:justify-center items-center">
-                                        <label class="sm:hidden text-sm font-semibold text-gray-600 mr-2">${t.label_status}:</label>
-                                        <input type="checkbox" id="check-${taskId}" class="task-checkbox">
-                                    </div>
-
-                                    <!-- Observations/Details -->
-                                    <div class="col-span-1">
-                                        <label class="sm:hidden text-sm font-semibold text-gray-600 block mb-1 mt-2">${t.label_obs}:</label>
-                                        <input type="text" id="obs-${taskId}" class="task-obs w-full p-2 text-sm border border-gray-300 rounded-lg focus:ring-sky-500 focus:border-sky-500" placeholder="${lang === 'pt' ? 'Opcional: Detalhes, problemas, reposição.' : 'Optional: Details, issues, restock.'}">
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-
-                        <!-- Footer with Photo Button -->
-                        <div class="mt-4 pt-4 border-t border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                            <span class="text-sm text-gray-600 font-semibold flex-1 order-1 sm:order-none">
-                                ${t.photo_mandatory} <span class="font-normal text-gray-500">${mandatoryPhotoText}</span>
-                            </span>
-                            <button 
-                                class="add-photo-btn bg-sky-100 text-sky-700 hover:bg-sky-200 font-semibold py-1 px-3 rounded-lg text-xs transition duration-200 order-3 sm:order-none" 
-                                data-section-id="${section.id}">
-                                ${t.btn_add_photo}
-                            </button>
-                            <span class="text-xs italic text-gray-500 text-right mt-1 sm:mt-0 order-2 sm:order-none">${t.label_id} ${section.id}</span>
-                        </div>
+                        <span class="inline-block px-3 py-1 text-xs font-semibold leading-none text-green-800 bg-green-100 rounded-full">FINALIZADO</span>
                     </div>
                 `;
+                checklistsList.innerHTML += cardHtml;
             });
-            checklistContainer.innerHTML = html;
-            
-            // Re-attach event listeners and load state after rendering
-            addEventListeners();
-        }
 
-        // --- Gemini Feature Logic (Unchanged) ---
-        
-        // (Function implementations for setLoading, callGeminiApi, generateWelcomeNote remain the same)
-        function setLoading(isLoading) {
-            const t = translations[currentLang];
-            generateNoteAction.disabled = isLoading;
-            if (isLoading) {
-                document.getElementById('generate-note-action-text').textContent = t.modal_generating;
-                generateNoteSpinner.classList.remove('hidden');
-                generatedNoteOutput.value = t.message_generating;
-            } else {
-                document.getElementById('generate-note-action-text').textContent = t.modal_generate_action;
-                generateNoteSpinner.classList.add('hidden');
-            }
-        }
-
-        async function callGeminiApi(payload) {
-            let retries = 0;
-            const maxRetries = 5;
-
-            while (retries < maxRetries) {
-                try {
-                    const response = await fetch(GEMINI_API_URL, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) {
-                        return await response.json();
-                    } else if (response.status === 429) {
-                        const delay = Math.pow(2, retries) * 1000 + Math.random() * 1000;
-                        retries++;
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        continue;
-                    } else {
-                        const errorBody = await response.json();
-                        throw new Error(`API Error: ${response.status} - ${errorBody.error?.message || response.statusText}`);
+            // Adiciona listener de clique para os cards
+            document.querySelectorAll('[data-doc-id]').forEach(card => {
+                card.addEventListener('click', () => {
+                    const docId = card.getAttribute('data-doc-id');
+                    const checklist = checklists.find(c => c.id === docId);
+                    if (checklist) {
+                        currentChecklistData = checklist; // Salva para exportação
+                        showDetailsModal(checklist.data);
                     }
-                } catch (error) {
-                    if (retries === maxRetries - 1) {
-                        throw new Error(`Falha na comunicação com a API após ${maxRetries} tentativas: ${error.message}`);
-                    }
-                    retries++;
-                }
-            }
-        }
-
-        async function generateWelcomeNote() {
-            const t = translations[currentLang];
-            const propertyName = propriedadeInput.value.trim();
-            const context = noteContext.value.trim() || (currentLang === 'pt' ? 'sem contexto adicional' : 'no additional context');
-
-            if (!propertyName) {
-                noteModal.classList.add('hidden');
-                displayMessage(t.message_prop_required, "text-red-500");
-                return;
-            }
-            
-            setLoading(true);
-
-            const systemPrompt = `You are a friendly and professional writing assistant, specialized in drafting short, warm welcome notes for short-term rental guests (Airbnb). The note must have a welcoming and positive tone, confirming that the cleaning is complete and the property is ready. The response MUST be in ${currentLang === 'pt' ? 'Portuguese' : 'English'}.`;
-                
-            const userQuery = `Generate a welcome note for a guest staying at the property named "${propertyName}". Use the following context: "${context}". Add a brief mention that cleaning has been completed and the place is ready. End the note with a warm closing sentence. The note should be short (maximum 4 sentences).`;
-
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-            };
-
-            try {
-                const result = await callGeminiApi(payload);
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (text) {
-                    generatedNoteOutput.value = text.trim();
-                } else {
-                    generatedNoteOutput.value = t.message_generation_fail;
-                }
-            } catch (error) {
-                console.error("Gemini API error:", error);
-                generatedNoteOutput.value = `${t.message_generation_fail} Erro: ${error.message}`;
-            } finally {
-                setLoading(false);
-            }
-        }
-
-
-        // --- Event Handlers ---
-
-        function updateGeminiButtonState() {
-            const propertyName = propriedadeInput.value.trim();
-            const isEnabled = propertyName.length > 0;
-            
-            generateNoteBtn.disabled = !isEnabled;
-            generateNoteAction.disabled = !isEnabled;
-            
-            if (isEnabled) {
-                generateNoteBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                generateNoteAction.classList.remove('opacity-50', 'cursor-not-allowed');
-            } else {
-                generateNoteBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                generateNoteAction.classList.add('opacity-50', 'cursor-not-allowed');
-            }
-        }
-
-        function handlePhotoAdd(event) {
-            const sectionId = event.currentTarget.getAttribute('data-section-id');
-            const t = translations[currentLang];
-            const message = currentLang === 'pt' ? t.message_photo_unsupported_pt : t.message_photo_unsupported_en;
-            
-            displayMessage(`[${sectionId}] ${message}`, "text-orange-500");
-        }
-
-        function handleResetClick() {
-            const t = translations[currentLang];
-
-            if (resetConfirm) {
-                // Second click: Perform reset
-                // Since progress is now in Firestore, we clear the data there.
-                if (isAuthReady && db) {
-                    const progressDocRef = getProgressDocRef();
-                    if (progressDocRef) {
-                        setDoc(progressDocRef, {}, { merge: false })
-                            .then(() => console.log("Firestore progress cleared."))
-                            .catch(err => console.error("Failed to clear progress:", err));
-                    }
-                }
-                
-                // Clear all local inputs
-                metadataFields.forEach(id => {
-                    const input = document.getElementById(id);
-                    if (input) input.value = '';
                 });
-                applyChecklistState({}); // Clear UI
-                updateUIText(currentLang);
-                displayMessage(t.message_reset_success, "text-red-500");
-                resetConfirm = false;
-                resetBtn.classList.remove('reset-confirm');
-                resetTextEl.textContent = t.btn_reset;
-
-            } else {
-                // First click: Ask for confirmation
-                resetConfirm = true;
-                resetBtn.classList.add('reset-confirm');
-                resetTextEl.textContent = t.btn_reset_confirm;
-                
-                // Reset confirmation state after 3 seconds if no second click
-                setTimeout(() => {
-                    if (resetConfirm) {
-                        resetConfirm = false;
-                        resetBtn.classList.remove('reset-confirm');
-                        resetTextEl.textContent = t.btn_reset;
-                    }
-                }, 3000);
-            }
+            });
         }
-        
+
         /**
-         * Exports data to CSV. Can be called automatically after submission.
-         * @param {boolean} silent - If true, suppresses the success message and download link removal.
+         * Estrutura de tarefas para reconstrução dos detalhes.
+         * Deve ser idêntica à estrutura do index.html para correlacionar IDs.
          */
-        function exportToCSV(silent = false) {
-            const t = translations[currentLang];
-            const state = getCurrentChecklistState();
-            const metadata = state.metadata;
+        const checklistStructure = [
+            { id: 'gerais', title: "🏡 ÁREAS COMUNS E GERAIS", tasks: [ "Coletar lixo...", "Limpar espelhos...", "Limpar/Desinfetar interruptores...", "Aspirar/Varrer...", "Desinfetar superfícies...", "Ventilar o ambiente.", "Remover teias..." ] },
+            { id: 'sala', title: "🛋️ SALA DE ESTAR", tasks: [ "Limpar e organizar mesas...", "Limpar a televisão...", "Aspirar ou limpar sofás...", "Limpar rodapés." ] },
+            { id: 'quartos', tasks: [ "Trocar roupas de cama...", "Fazer as camas.", "2 toalhas de banho...", "Sacola de lixo...", "Limpar mesas de cabeceira...", "Limpar espelhos...", "Aspirar ou varrer o chão.", "Limpar dentro do guarda-roupa..." ] },
+            { id: 'banheiros', tasks: [ "Limpar e desinfetar vasos...", "Limpar pias...", "Limpar espelhos.", "Limpar chuveiro...", "Trocar toalhas.", "Limpar o chão.", "Reabastecer papel...", "Sacola de lixo..." ] },
+            { id: 'cozinha', tasks: [ "Limpar a pia.", "Limpar bancadas...", "1 papel toalha...", "No mínimo 5 sacolas...", "Limpar fogão e forno...", "Limpar micro-ondas...", "Esvaziar e limpar a geladeira.", "Limpar a lava-louças...", "Limpar armários e gavetas...", "Lavar a louça e guardar.", "Limpar o chão.", "Reabastecer produtos...", "Encher reservatório de água..." ] },
+            { id: 'servico', tasks: [ "Limpar máquina de lavar...", "Limpar secadora...", "Limpar tanque/pia...", "Organizar produtos...", "Limpar o chão." ] },
+            { id: 'externa', tasks: [ "Varrer ou lavar o chão.", "Limpar móveis...", "Remover teias de aranha.", "Regar plantas...", "Limpar Churrasqueira..." ] },
+            { id: 'finalizacao', tasks: [ "Verificar se todos os cômodos...", "Verificar gavetas e armários...", "Reabastecer itens de cortesia...", "Repor: 2 águas...", "Repor: 2 chocolates...", "Repor: 1 Vinho...", "Ajustar a temperatura...", "Acender luzes...", "Deixar uma nota de boas-vindas...", "Verificar e notificar suprimentos..." ] }
+        ];
+
+        /**
+         * Exibe o modal com os detalhes completos do checklist.
+         */
+        function showDetailsModal(data) {
+            const metadata = data.metadata || {};
+            const tasks = data.tasks || {};
+            const submittedAt = formatSubmissionDate(data.submittedAt);
+
+            let html = `
+                <div class="bg-gray-50 p-4 rounded-lg border">
+                    <p class="text-sm font-semibold text-gray-700">Propriedade: <span class="font-normal text-blue-700">${metadata.propriedade || 'N/A'}</span></p>
+                    <p class="text-sm font-semibold text-gray-700">Data do Serviço: <span class="font-normal">${metadata.data || 'N/A'}</span></p>
+                    <p class="text-sm font-semibold text-gray-700">Cleaner: <span class="font-normal">${metadata.cleaner || 'N/A'}</span></p>
+                    <p class="text-sm font-semibold text-gray-700">Submetido em: <span class="font-normal">${submittedAt}</span></p>
+                    <p class="text-xs font-semibold text-gray-500 mt-2 truncate">ID do Usuário (Cleaner): <span class="font-normal">${data.submittedBy || 'N/A'}</span></p>
+                </div>
+                
+                <h4 class="text-lg font-bold text-gray-700 mt-6 mb-3">Tarefas Realizadas (${Object.keys(tasks).length} itens)</h4>
+                <ul class="task-detail-list bg-white p-4 rounded-lg border max-h-80 overflow-y-auto">
+            `;
+
+            const taskMap = {};
+            checklistStructure.forEach(section => {
+                section.tasks.forEach((taskName, index) => {
+                    taskMap[`${section.id}-${index}`] = taskName;
+                });
+            });
+
+            // Itera sobre as tarefas salvas
+            for (const taskId in tasks) {
+                const task = tasks[taskId];
+                const taskName = taskMap[taskId] || `Tarefa ID: ${taskId}`;
+                const status = task.status ? 
+                    '<span class="text-green-600 font-bold">FEITO</span>' : 
+                    '<span class="text-red-600 font-bold">FALTOU</span>';
+                const obs = task.observation ? `<br><span class="text-xs italic text-gray-500">Obs: ${task.observation}</span>` : '';
+
+                html += `
+                    <li>
+                        <span class="text-gray-900">${taskName}</span>: ${status}
+                        ${obs}
+                    </li>
+                `;
+            }
+
+            html += `</ul>`;
+            
+            modalContentDetails.innerHTML = html;
+            detailsModal.classList.remove('hidden');
+        }
+
+        /**
+         * Exporta os dados de uma única submissão para CSV.
+         */
+        function exportToCSV(data) {
+            const metadata = data.metadata || {};
+            const tasks = data.tasks || {};
+            const submittedAt = formatSubmissionDate(data.submittedAt);
+
             let csvContent = "data:text/csv;charset=utf-8,";
             
             // 1. Metadata
-            csvContent += `${t.meta_propriedade},` + (metadata.propriedade || "") + "\n";
-            csvContent += `${t.meta_data},` + (metadata.data || "") + "\n";
-            csvContent += `${t.meta_cleaner},` + (metadata.cleaner || "") + "\n\n";
+            csvContent += "Metadados\n";
+            csvContent += `Propriedade,${metadata.propriedade || ""}\n`;
+            csvContent += `Data do Serviço,${metadata.data || ""}\n`;
+            csvContent += `Cleaner,${metadata.cleaner || ""}\n`;
+            csvContent += `Submetido Em,${submittedAt}\n\n`;
 
             // 2. Header
-            csvContent += `${t.label_task},${t.label_status},${t.label_obs}\n`;
+            csvContent += `Tarefa,Status,Observações\n`;
 
             // 3. Task Data
-            checklistData.forEach(section => {
-                section.tasks.forEach((task, index) => {
-                    const taskId = `${section.id}-${index}`;
-                    const taskState = state.tasks[taskId];
-                    
-                    const taskText = task[currentLang].replace(/"/g, '""'); // Escape double quotes
-                    const statusText = taskState && taskState.status ? t.status_completed : t.status_pending;
-                    const observationText = (taskState && taskState.observation ? taskState.observation : "").replace(/"/g, '""');
-                    
-                    // Format row
-                    csvContent += `"${taskText.replace(/[\n\r]/g, ' ').trim()}",` + 
-                                  `${statusText},` +
-                                  `"${observationText.replace(/[\n\r]/g, ' ').trim()}"\n`;
+            const taskMap = {};
+            checklistStructure.forEach(section => {
+                section.tasks.forEach((taskName, index) => {
+                    taskMap[`${section.id}-${index}`] = taskName;
                 });
             });
 
-            // Create and trigger download
+            for (const taskId in tasks) {
+                const taskState = tasks[taskId];
+                const taskText = taskMap[taskId] || `Tarefa ID: ${taskId}`;
+                
+                const statusText = taskState && taskState.status ? 'FEITO' : 'FALTOU';
+                const observationText = (taskState && taskState.observation ? taskState.observation : "").replace(/"/g, '""');
+                
+                // Formata a linha
+                csvContent += `"${taskText.replace(/[\n\r]/g, ' ').trim()}",` + 
+                              `${statusText},` +
+                              `"${observationText.replace(/[\n\r]/g, ' ').trim()}"\n`;
+            }
+
+            // Cria e dispara o download
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
             
-            // Use current property name and date for file name
             const propName = (metadata.propriedade || "Checklist").replace(/[^a-zA-Z0-9]/g, '_');
             const date = (metadata.data || new Date().toISOString().slice(0, 10));
-            link.setAttribute("download", `Checklist_Airbnb_${propName}_${date}.csv`);
+            link.setAttribute("download", `Submissao_Detalhada_${propName}_${date}.csv`);
             
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
-            if (!silent) {
-                displayMessage(t.message_export_success, "text-blue-500");
-            }
-        }
-
-        function addEventListeners() {
-            // Language Toggle
-            document.getElementById('lang-toggle-btn').addEventListener('click', toggleLanguage);
-
-            // Auto-save on change in any input/checkbox (Save to Firestore)
-            document.querySelectorAll('.task-checkbox, .task-obs').forEach(el => {
-                el.addEventListener('change', saveChecklistState);
-                el.addEventListener('input', saveChecklistState);
-            });
-            metadataFields.forEach(id => {
-                const input = document.getElementById(id);
-                if (input) {
-                    input.addEventListener('change', saveChecklistState);
-                    input.addEventListener('input', saveChecklistState);
-                    // Check button state on property input change
-                    if (id === 'propriedade') {
-                        input.addEventListener('input', updateGeminiButtonState);
-                    }
-                }
-            });
-
-            // New: Add Photo Button Listener
-            document.querySelectorAll('.add-photo-btn').forEach(btn => {
-                btn.addEventListener('click', handlePhotoAdd);
-            });
-
-            // Manual Save Button (for user feedback)
-            document.getElementById('save-btn').addEventListener('click', saveChecklistState);
-
-            // Export/Submit Button (Submits to Firestore)
-            document.getElementById('export-btn').addEventListener('click', submitChecklist);
-
-            // Reset Button (Two-click confirmation)
-            document.getElementById('reset-btn').addEventListener('click', handleResetClick);
-
-            // --- Gemini Feature Listeners ---
-
-            // Open Modal
-            generateNoteBtn.addEventListener('click', () => {
-                generatedNoteOutput.value = "";
-                noteModal.classList.remove('hidden');
-                const propertyName = propriedadeInput.value.trim();
-                const t = translations[currentLang];
-                if (propertyName) {
-                    noteContext.value = `${t.meta_propriedade}: ${propertyName}.`;
-                } else {
-                    noteContext.value = '';
-                }
-            });
-
-            // Close Modal
-            document.getElementById('close-note-modal').addEventListener('click', () => {
-                noteModal.classList.add('hidden');
-            });
-            
-            // Generate Note Action
-            generateNoteAction.addEventListener('click', generateWelcomeNote);
-
-            // Copy to Clipboard
-            document.getElementById('copy-note-btn').addEventListener('click', () => {
-                generatedNoteOutput.select();
-                const t = translations[currentLang];
-                try {
-                    const successful = document.execCommand('copy');
-                    if (successful) {
-                        displayMessage(t.message_copy_success, "text-sky-500");
-                    } else {
-                        displayMessage(t.message_copy_fail, "text-red-500");
-                    }
-                } catch (err) {
-                    console.error('Falha ao copiar:', err);
-                    displayMessage(t.message_copy_fail, "text-red-500");
-                }
-            });
-
-            // Initial check for Gemini button state
-            updateGeminiButtonState();
-        }
-
-        // Display a brief message to the user
-        function displayMessage(text, className) {
-            const messageEl = document.getElementById('message');
-            messageEl.textContent = text;
-            messageEl.className = `mt-3 text-sm text-center font-medium ${className}`;
-            
-            // Clear message after 3 seconds
-            setTimeout(() => {
-                messageEl.textContent = '';
-                messageEl.className = `mt-3 text-sm text-center font-medium text-gray-500`;
-            }, 3000);
         }
 
         /**
-         * Inicializa todas as referências DOM após o carregamento da página.
+         * Configura a autenticação e inicia a escuta de dados.
          */
-        function initializeDOMReferences() {
-            
-            // Initialize all references
-            checklistContainer = document.getElementById('checklist-container');
-            propriedadeInput = document.getElementById('propriedade');
-            noteModal = document.getElementById('note-modal');
-            generateNoteBtn = document.getElementById('generate-note-btn');
-            generateNoteAction = document.getElementById('generate-note-action');
-            noteContext = document.getElementById('note-context');
-            generatedNoteOutput = document.getElementById('generated-note-output');
-            generateNoteSpinner = document.getElementById('generate-note-spinner');
-            resetBtn = document.getElementById('reset-btn');
-            authStatusEl = document.getElementById('auth-status');
-            
-            // Initialize SPAN text elements (these are critical for the initial render)
-            saveTextEl = document.getElementById('save-text');
-            exportTextEl = document.getElementById('export-text');
-            resetTextEl = document.getElementById('reset-text');
-            generateNoteTextBtnEl = document.getElementById('generate-note-text-btn');
-
-
-            // CRITICAL CHECK: Ensure all absolutely necessary elements for step 1 (updateUIText) are present.
-            if (!checklistContainer || !saveTextEl || !exportTextEl || !resetTextEl || !generateNoteTextBtnEl) {
-                const messageEl = document.getElementById('message');
-                const errorMessage = "ERRO CRÍTICO: O HTML não carregou completamente. IDs essenciais ausentes. Por favor, tente recarregar.";
-                console.error(errorMessage, { checklistContainer, saveTextEl, exportTextEl, resetTextEl, generateNoteTextBtnEl });
-                if (messageEl) {
-                    messageEl.textContent = errorMessage;
-                    messageEl.className = "mt-3 text-sm text-center font-bold text-white bg-red-600 p-2 rounded-lg";
-                }
-                return false;
-            }
-
-            return true;
-        }
-
-        /**
-         * Configura a autenticação e inicia o carregamento dos dados.
-         */
-        async function setupAuthAndLoad() {
-            const t = translations[currentLang];
-            authStatusEl.textContent = t.auth_status_loading;
-
-            // Se o Firebase não foi inicializado (i.e., estamos no GitHub Pages), pule a autenticação
+        async function setupAuthAndListen() {
             if (!auth) {
-                authStatusEl.textContent = translations[currentLang].auth_status_error;
-                authStatusEl.className = "text-xs font-medium text-red-600";
-                
-                // Renderizar o checklist mesmo sem cloud para permitir uso offline/CSV
-                updateUIText(currentLang);
+                authStatusEl.textContent = "ERRO: Firebase Auth não inicializado. (Verifique o console)";
+                authStatusEl.className = "text-sm font-medium text-red-600";
+                loadingIndicator.classList.add('hidden');
+                emptyState.classList.remove('hidden');
                 return;
             }
+
+            authStatusEl.textContent = "Conectando ao sistema...";
 
             try {
                 // 1. Autenticação
@@ -1066,54 +362,83 @@
                     await signInAnonymously(auth);
                 }
 
-                onAuthStateChanged(auth, async (user) => {
+                onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        userId = user.uid;
                         isAuthReady = true;
-                        authStatusEl.textContent = `${t.auth_status_success} ${userId}`;
-                        authStatusEl.className = "text-xs font-medium text-gray-600 truncate";
-                        
-                        // 2. Carregar o estado
-                        const initialState = await loadChecklistState();
-                        applyChecklistState(initialState);
+                        authStatusEl.textContent = `Conectado como: ${user.uid}`;
+                        authStatusEl.className = "text-sm font-medium text-gray-600 truncate";
+                        // 2. Inicia a escuta em tempo real
+                        startRealtimeListener();
                     } else {
                         isAuthReady = false;
-                        authStatusEl.textContent = t.auth_status_error;
-                        authStatusEl.className = "text-xs font-medium text-red-600";
+                        authStatusEl.textContent = "ERRO: Conexão com o sistema falhou.";
+                        authStatusEl.className = "text-sm font-medium text-red-600";
+                        loadingIndicator.classList.add('hidden');
+                        emptyState.classList.remove('hidden');
                     }
                 });
 
             } catch (error) {
                 console.error("Firebase Auth Error:", error);
-                authStatusEl.textContent = t.auth_status_error;
-                authStatusEl.className = "text-xs font-medium text-red-600";
+                authStatusEl.textContent = `ERRO FATAL: Falha na autenticação. ${error.message}`;
+                authStatusEl.className = "text-sm font-medium text-red-600";
+                loadingIndicator.classList.add('hidden');
             }
         }
 
-        // --- Initialization ---
+        /**
+         * Inicia o listener de tempo real do Firestore.
+         */
+        function startRealtimeListener() {
+            if (!db || !isAuthReady) return;
 
-        // Start the application immediately after the DOM is parsed, as the script is at the end of the body.
+            const submittedRef = getSubmittedCollectionRef();
+            if (!submittedRef) {
+                console.error("Referência da coleção Firestore é nula.");
+                return;
+            }
+
+            const q = query(submittedRef);
+
+            onSnapshot(q, (snapshot) => {
+                const checklists = [];
+                snapshot.forEach((doc) => {
+                    checklists.push({
+                        id: doc.id,
+                        data: doc.data()
+                    });
+                });
+                // Invertendo a ordem para mostrar os mais recentes primeiro
+                checklists.reverse(); 
+                renderChecklists(checklists);
+            }, (error) => {
+                console.error("Erro ao receber dados do Firestore:", error);
+                authStatusEl.textContent = `ERRO: Falha na escuta de dados. ${error.message}`;
+                authStatusEl.className = "text-sm font-medium text-red-600";
+                loadingIndicator.classList.add('hidden');
+            });
+        }
+        
+        // --- Event Listeners ---
+        // (Listeners para o modal)
+        
         window.addEventListener('DOMContentLoaded', () => {
-             try {
-                if (initializeDOMReferences()) {
-                    
-                    // 1. Apply static texts and initial render
-                    updateUIText(currentLang); // Isso já chama renderChecklist e addEventListeners
-                    
-                    // 2. Setup Firebase Auth and load progress
-                    setupAuthAndLoad();
+             if (initializeDOMReferences()) {
+                
+                closeModalBtn.addEventListener('click', () => {
+                    detailsModal.classList.add('hidden');
+                    currentChecklistData = null;
+                });
 
-                }
-            } catch (e) {
-                console.error("ERRO FATAL DURANTE O CARREGAMENTO:", e);
-                const messageEl = document.getElementById('message');
-                if (messageEl) {
-                    messageEl.textContent = "ERRO FATAL: Falha na inicialização do JavaScript. Verifique o console do navegador.";
-                    messageEl.className = "mt-3 text-sm text-center font-bold text-white bg-red-600 p-2 rounded-lg";
-                }
+                exportSingleBtn.addEventListener('click', () => {
+                    if (currentChecklistData) {
+                        exportToCSV(currentChecklistData.data);
+                    }
+                });
+                
+                setupAuthAndListen();
             }
         });
-
     </script>
 </body>
 </html>
