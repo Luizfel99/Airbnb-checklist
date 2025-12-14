@@ -1,444 +1,286 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Acompanhamento de Checklists</title>
-    <!-- Tailwind CSS CDN - ATENÇÃO: O CDN não é recomendado para produção. -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom styles */
-        .card-shadow {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-            transition: transform 0.2s;
-        }
-        .card-shadow:hover {
-            transform: translateY(-2px);
-        }
-        .task-detail-list li {
-            padding: 4px 0;
-            border-bottom: 1px dashed #e5e7eb;
-        }
-        .task-detail-list li:last-child {
-            border-bottom: none;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin • Painel de Acompanhamento de Checklists</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .card-shadow{box-shadow:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -2px rgba(0,0,0,.06);transition:transform .2s}
+    .card-shadow:hover{transform:translateY(-2px)}
+    .task-detail-list li{padding:4px 0;border-bottom:1px dashed #e5e7eb}
+    .task-detail-list li:last-child{border-bottom:none}
+  </style>
 </head>
 <body class="bg-gray-100 font-sans antialiased">
+  <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
+    <header class="bg-white p-6 rounded-xl shadow-lg mb-8">
+      <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas (Admin)</h1>
+      <p class="text-gray-600">Visualização em tempo real dos Checklists finalizados e enviados.</p>
+      <div id="auth-status" class="mt-3 text-sm font-medium text-gray-500">Conectando ao banco de dados...</div>
+    </header>
 
-    <!-- Main Container -->
-    <div class="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8">
-        
-        <!-- Header -->
-        <header class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h1 class="text-3xl font-extrabold text-blue-800 border-b pb-2 mb-4">Painel de Acompanhamento de Limpezas</h1>
-            <p class="text-gray-600">Visualização em tempo real dos Checklists finalizados e enviados.</p>
-            <div id="auth-status" class="mt-3 text-sm font-medium text-gray-500">Conectando ao banco de dados...</div>
-        </header>
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <h2 class="text-xl font-bold text-gray-700 mb-4">Checklists Submetidos</h2>
 
-        <!-- Main Content Area: Checklists List -->
-        <div class="bg-white p-6 rounded-xl shadow-lg">
-            <h2 class="text-xl font-bold text-gray-700 mb-4">Checklists Submetidos</h2>
-            
-            <!-- Loading Indicator -->
-            <div id="loading-indicator" class="text-center py-8">
-                <div class="animate-spin inline-block w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full"></div>
-                <p class="mt-2 text-gray-500">Carregando dados em tempo real...</p>
-            </div>
+      <div id="loading-indicator" class="text-center py-8">
+        <div class="animate-spin inline-block w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full"></div>
+        <p class="mt-2 text-gray-500">Carregando dados em tempo real...</p>
+      </div>
 
-            <!-- List Container -->
-            <div id="checklists-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Data will be injected here -->
-            </div>
+      <div id="checklists-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
-            <!-- Empty State -->
-            <div id="empty-state" class="hidden text-center py-10 border border-dashed border-gray-300 rounded-lg bg-gray-50">
-                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum Checklist Encontrado</h3>
-                <p class="mt-1 text-sm text-gray-500">Aguardando a primeira submissão...</p>
-            </div>
-        </div>
+      <div id="empty-state" class="hidden text-center py-10 border border-dashed border-gray-300 rounded-lg bg-gray-50">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum Checklist Encontrado</h3>
+        <p class="mt-1 text-sm text-gray-500">Aguardando a primeira submissão...</p>
+      </div>
     </div>
+  </div>
 
-    <!-- Modal for Full Details -->
-    <div id="details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
-            <h3 class="text-2xl font-bold text-sky-600 mb-4 border-b pb-2">Detalhes da Submissão</h3>
-            <div id="modal-content-details" class="space-y-4">
-                <!-- Full data view will be rendered here -->
-            </div>
-            <div class="flex justify-end mt-6 space-x-3">
-                <button id="export-single-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200">
-                    Exportar para CSV
-                </button>
-                <button id="close-modal-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm transition duration-200">
-                    Fechar
-                </button>
-            </div>
-        </div>
+  <div id="details-modal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-75 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6">
+      <h3 class="text-2xl font-bold text-sky-600 mb-4 border-b pb-2">Detalhes da Submissão</h3>
+      <div id="modal-content-details" class="space-y-4"></div>
+      <div class="flex justify-end mt-6 space-x-3">
+        <button id="export-single-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm transition duration-200">Exportar para CSV</button>
+        <button id="close-modal-btn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-lg text-sm transition duration-200">Fechar</button>
+      </div>
     </div>
+  </div>
 
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, collection, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    <script type="module">
-        // --- FIREBASE IMPORTS ---
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, onSnapshot, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        
-        // --- GLOBAL FIREBASE VARIABLES ---
-        let db;
-        let auth;
-        let isAuthReady = false;
-        let appId = 'default-app-id';
-        const SUBMITTED_COLLECTION = 'submittedChecklists';
-        let currentChecklistData = null; 
+    let db, auth, isAuthReady=false, appId='default-app-id';
+    const SUBMITTED_COLLECTION='submittedChecklists';
+    let currentChecklistData=null;
 
-        // --- DOM References (Assigned in initializeDOMReferences) ---
-        let authStatusEl;
-        let loadingIndicator;
-        let checklistsList;
-        let emptyState;
-        let detailsModal;
-        let modalContentDetails;
-        let closeModalBtn;
-        let exportSingleBtn;
+    let authStatusEl, loadingIndicator, checklistsList, emptyState, detailsModal, modalContentDetails, closeModalBtn, exportSingleBtn;
 
+    if (typeof __firebase_config!=='undefined' && __firebase_config){
+      try{ const firebaseConfig=JSON.parse(__firebase_config); const app=initializeApp(firebaseConfig); db=getFirestore(app); auth=getAuth(app);}catch(e){console.error("Firebase initialization failed:",e);}
+    }
+    if (typeof __app_id!=='undefined'){ appId=__app_id; }
 
-        // Initialize Firebase (Safety check for environment variables)
-        if (typeof __firebase_config !== 'undefined' && __firebase_config) {
-            try {
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-            } catch (e) {
-                console.error("Firebase initialization failed:", e);
-            }
-        }
-        if (typeof __app_id !== 'undefined') {
-            appId = __app_id;
-        }
+    function initializeDOMReferences(){
+      authStatusEl=document.getElementById('auth-status');
+      loadingIndicator=document.getElementById('loading-indicator');
+      checklistsList=document.getElementById('checklists-list');
+      emptyState=document.getElementById('empty-state');
+      detailsModal=document.getElementById('details-modal');
+      modalContentDetails=document.getElementById('modal-content-details');
+      closeModalBtn=document.getElementById('close-modal-btn');
+      exportSingleBtn=document.getElementById('export-single-btn');
+      if(!authStatusEl||!checklistsList||!loadingIndicator){
+        const msg="ERRO CRÍTICO: Falha na inicialização do Painel. Elementos HTML ausentes.";
+        if(authStatusEl){authStatusEl.textContent=msg;authStatusEl.className="text-sm font-medium text-red-600 font-bold";}
+        console.error(msg);return false;
+      }
+      return true;
+    }
 
-        /**
-         * Inicializa as referências DOM e verifica se os elementos críticos existem.
-         */
-        function initializeDOMReferences() {
-            authStatusEl = document.getElementById('auth-status');
-            loadingIndicator = document.getElementById('loading-indicator');
-            checklistsList = document.getElementById('checklists-list');
-            emptyState = document.getElementById('empty-state');
-            detailsModal = document.getElementById('details-modal');
-            modalContentDetails = document.getElementById('modal-content-details');
-            closeModalBtn = document.getElementById('close-modal-btn');
-            exportSingleBtn = document.getElementById('export-single-btn');
+    function toDateSafe(value){
+      if(!value) return null;
+      if(typeof value==='object' && typeof value.toDate==='function' && value.seconds!=null) return value.toDate();
+      if(value instanceof Date) return value;
+      if(typeof value==='number') return new Date(value<1e12? value*1000 : value);
+      if(typeof value==='string'){ const d=new Date(value); return isNaN(d.getTime())? null : d; }
+      return null;
+    }
 
-            if (!authStatusEl || !checklistsList || !loadingIndicator) {
-                const errorMsg = "ERRO CRÍTICO: Falha na inicialização do Painel. Elementos HTML ausentes.";
-                if (authStatusEl) {
-                    authStatusEl.textContent = errorMsg;
-                    authStatusEl.className = "text-sm font-medium text-red-600 font-bold";
-                }
-                console.error(errorMsg);
-                return false;
-            }
-            return true;
-        }
+    function formatSubmissionDate(input){
+      const d=toDateSafe(input);
+      if(!d) return 'N/A';
+      return d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
 
+    function escapeHTML(str){
+      return String(str??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
 
-        /**
-         * Returns the Firestore collection reference for public submitted data.
-         */
-        function getSubmittedCollectionRef() {
-            // Path: /artifacts/{appId}/public/data/submittedChecklists
-            if (!db) return null;
-            return collection(db, 'artifacts', appId, 'public', 'data', SUBMITTED_COLLECTION);
-        }
+    function getSubmittedCollectionRef(){
+      if(!db) return null;
+      return collection(db,'artifacts',appId,'public','data',SUBMITTED_COLLECTION);
+    }
 
-        /**
-         * Converte a data ISO string para formato legível.
-         */
-        function formatSubmissionDate(isoString) {
-            if (!isoString) return 'N/A';
-            const date = new Date(isoString);
-            return date.toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            });
-        }
+    function renderChecklists(checklists){
+      loadingIndicator.classList.add('hidden');
+      checklistsList.innerHTML='';
+      if(checklists.length===0){ emptyState.classList.remove('hidden'); return; }
+      emptyState.classList.add('hidden');
 
-        /**
-         * Renderiza a lista de checklists.
-         */
-        function renderChecklists(checklists) {
-            loadingIndicator.classList.add('hidden');
-            checklistsList.innerHTML = '';
+      for(const doc of checklists){
+        const data=doc.data;
+        const md=data.metadata||{};
+        const submissionTime=formatSubmissionDate(data.submittedAt);
+        const propertyName=escapeHTML(md.propriedade||'Propriedade Sem Nome');
+        const cleanerName=escapeHTML(md.cleaner||'Cleaner Anônimo');
 
-            if (checklists.length === 0) {
-                emptyState.classList.remove('hidden');
-                return;
-            }
+        const card=`
+          <div id="card-${doc.id}" class="bg-white p-5 rounded-xl card-shadow border border-gray-200 cursor-pointer hover:border-sky-500" data-doc-id="${doc.id}">
+            <p class="text-xs font-semibold text-gray-500 mb-1">Submetido em:</p>
+            <p class="text-sm font-medium text-gray-700 mb-3">${submissionTime}</p>
+            <h3 class="text-xl font-bold text-blue-800 truncate mb-1">${propertyName}</h3>
+            <p class="text-md text-gray-600 mb-4">${cleanerName}</p>
+            <span class="inline-block px-3 py-1 text-xs font-semibold leading-none text-green-800 bg-green-100 rounded-full">FINALIZADO</span>
+          </div>`;
+        checklistsList.insertAdjacentHTML('beforeend', card);
+      }
 
-            emptyState.classList.add('hidden');
-
-            checklists.forEach(doc => {
-                const data = doc.data;
-                const metadata = data.metadata || {};
-                const submissionTime = formatSubmissionDate(data.submittedAt);
-                const propertyName = metadata.propriedade || 'Propriedade Sem Nome';
-                const cleanerName = metadata.cleaner || 'Cleaner Anônimo';
-
-                const cardHtml = `
-                    <div id="card-${doc.id}" class="bg-white p-5 rounded-xl card-shadow border border-gray-200 cursor-pointer hover:border-sky-500" data-doc-id="${doc.id}">
-                        <p class="text-xs font-semibold text-gray-500 mb-1">Submetido em:</p>
-                        <p class="text-sm font-medium text-gray-700 mb-3">${submissionTime}</p>
-                        
-                        <h3 class="text-xl font-bold text-blue-800 truncate mb-1">${propertyName}</h3>
-                        <p class="text-md text-gray-600 mb-4">${cleanerName}</p>
-                        
-                        <span class="inline-block px-3 py-1 text-xs font-semibold leading-none text-green-800 bg-green-100 rounded-full">FINALIZADO</span>
-                    </div>
-                `;
-                checklistsList.innerHTML += cardHtml;
-            });
-
-            // Adiciona listener de clique para os cards
-            document.querySelectorAll('[data-doc-id]').forEach(card => {
-                card.addEventListener('click', () => {
-                    const docId = card.getAttribute('data-doc-id');
-                    const checklist = checklists.find(c => c.id === docId);
-                    if (checklist) {
-                        currentChecklistData = checklist; // Salva para exportação
-                        showDetailsModal(checklist.data);
-                    }
-                });
-            });
-        }
-
-        /**
-         * Estrutura de tarefas para reconstrução dos detalhes.
-         * Deve ser idêntica à estrutura do index.html para correlacionar IDs.
-         */
-        const checklistStructure = [
-            { id: 'gerais', title: "🏡 ÁREAS COMUNS E GERAIS", tasks: [ "Coletar lixo...", "Limpar espelhos...", "Limpar/Desinfetar interruptores...", "Aspirar/Varrer...", "Desinfetar superfícies...", "Ventilar o ambiente.", "Remover teias..." ] },
-            { id: 'sala', title: "🛋️ SALA DE ESTAR", tasks: [ "Limpar e organizar mesas...", "Limpar a televisão...", "Aspirar ou limpar sofás...", "Limpar rodapés." ] },
-            { id: 'quartos', tasks: [ "Trocar roupas de cama...", "Fazer as camas.", "2 toalhas de banho...", "Sacola de lixo...", "Limpar mesas de cabeceira...", "Limpar espelhos...", "Aspirar ou varrer o chão.", "Limpar dentro do guarda-roupa..." ] },
-            { id: 'banheiros', tasks: [ "Limpar e desinfetar vasos...", "Limpar pias...", "Limpar espelhos.", "Limpar chuveiro...", "Trocar toalhas.", "Limpar o chão.", "Reabastecer papel...", "Sacola de lixo..." ] },
-            { id: 'cozinha', tasks: [ "Limpar a pia.", "Limpar bancadas...", "1 papel toalha...", "No mínimo 5 sacolas...", "Limpar fogão e forno...", "Limpar micro-ondas...", "Esvaziar e limpar a geladeira.", "Limpar a lava-louças...", "Limpar armários e gavetas...", "Lavar a louça e guardar.", "Limpar o chão.", "Reabastecer produtos...", "Encher reservatório de água..." ] },
-            { id: 'servico', tasks: [ "Limpar máquina de lavar...", "Limpar secadora...", "Limpar tanque/pia...", "Organizar produtos...", "Limpar o chão." ] },
-            { id: 'externa', tasks: [ "Varrer ou lavar o chão.", "Limpar móveis...", "Remover teias de aranha.", "Regar plantas...", "Limpar Churrasqueira..." ] },
-            { id: 'finalizacao', tasks: [ "Verificar se todos os cômodos...", "Verificar gavetas e armários...", "Reabastecer itens de cortesia...", "Repor: 2 águas...", "Repor: 2 chocolates...", "Repor: 1 Vinho...", "Ajustar a temperatura...", "Acender luzes...", "Deixar uma nota de boas-vindas...", "Verificar e notificar suprimentos..." ] }
-        ];
-
-        /**
-         * Exibe o modal com os detalhes completos do checklist.
-         */
-        function showDetailsModal(data) {
-            const metadata = data.metadata || {};
-            const tasks = data.tasks || {};
-            const submittedAt = formatSubmissionDate(data.submittedAt);
-
-            let html = `
-                <div class="bg-gray-50 p-4 rounded-lg border">
-                    <p class="text-sm font-semibold text-gray-700">Propriedade: <span class="font-normal text-blue-700">${metadata.propriedade || 'N/A'}</span></p>
-                    <p class="text-sm font-semibold text-gray-700">Data do Serviço: <span class="font-normal">${metadata.data || 'N/A'}</span></p>
-                    <p class="text-sm font-semibold text-gray-700">Cleaner: <span class="font-normal">${metadata.cleaner || 'N/A'}</span></p>
-                    <p class="text-sm font-semibold text-gray-700">Submetido em: <span class="font-normal">${submittedAt}</span></p>
-                    <p class="text-xs font-semibold text-gray-500 mt-2 truncate">ID do Usuário (Cleaner): <span class="font-normal">${data.submittedBy || 'N/A'}</span></p>
-                </div>
-                
-                <h4 class="text-lg font-bold text-gray-700 mt-6 mb-3">Tarefas Realizadas (${Object.keys(tasks).length} itens)</h4>
-                <ul class="task-detail-list bg-white p-4 rounded-lg border max-h-80 overflow-y-auto">
-            `;
-
-            const taskMap = {};
-            checklistStructure.forEach(section => {
-                section.tasks.forEach((taskName, index) => {
-                    taskMap[`${section.id}-${index}`] = taskName;
-                });
-            });
-
-            // Itera sobre as tarefas salvas
-            for (const taskId in tasks) {
-                const task = tasks[taskId];
-                const taskName = taskMap[taskId] || `Tarefa ID: ${taskId}`;
-                const status = task.status ? 
-                    '<span class="text-green-600 font-bold">FEITO</span>' : 
-                    '<span class="text-red-600 font-bold">FALTOU</span>';
-                const obs = task.observation ? `<br><span class="text-xs italic text-gray-500">Obs: ${task.observation}</span>` : '';
-
-                html += `
-                    <li>
-                        <span class="text-gray-900">${taskName}</span>: ${status}
-                        ${obs}
-                    </li>
-                `;
-            }
-
-            html += `</ul>`;
-            
-            modalContentDetails.innerHTML = html;
-            detailsModal.classList.remove('hidden');
-        }
-
-        /**
-         * Exporta os dados de uma única submissão para CSV.
-         */
-        function exportToCSV(data) {
-            const metadata = data.metadata || {};
-            const tasks = data.tasks || {};
-            const submittedAt = formatSubmissionDate(data.submittedAt);
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            
-            // 1. Metadata
-            csvContent += "Metadados\n";
-            csvContent += `Propriedade,${metadata.propriedade || ""}\n`;
-            csvContent += `Data do Serviço,${metadata.data || ""}\n`;
-            csvContent += `Cleaner,${metadata.cleaner || ""}\n`;
-            csvContent += `Submetido Em,${submittedAt}\n\n`;
-
-            // 2. Header
-            csvContent += `Tarefa,Status,Observações\n`;
-
-            // 3. Task Data
-            const taskMap = {};
-            checklistStructure.forEach(section => {
-                section.tasks.forEach((taskName, index) => {
-                    taskMap[`${section.id}-${index}`] = taskName;
-                });
-            });
-
-            for (const taskId in tasks) {
-                const taskState = tasks[taskId];
-                const taskText = taskMap[taskId] || `Tarefa ID: ${taskId}`;
-                
-                const statusText = taskState && taskState.status ? 'FEITO' : 'FALTOU';
-                const observationText = (taskState && taskState.observation ? taskState.observation : "").replace(/"/g, '""');
-                
-                // Formata a linha
-                csvContent += `"${taskText.replace(/[\n\r]/g, ' ').trim()}",` + 
-                              `${statusText},` +
-                              `"${observationText.replace(/[\n\r]/g, ' ').trim()}"\n`;
-            }
-
-            // Cria e dispara o download
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            
-            const propName = (metadata.propriedade || "Checklist").replace(/[^a-zA-Z0-9]/g, '_');
-            const date = (metadata.data || new Date().toISOString().slice(0, 10));
-            link.setAttribute("download", `Submissao_Detalhada_${propName}_${date}.csv`);
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-
-        /**
-         * Configura a autenticação e inicia a escuta de dados.
-         */
-        async function setupAuthAndListen() {
-            if (!auth) {
-                authStatusEl.textContent = "ERRO: Firebase Auth não inicializado. (Verifique o console)";
-                authStatusEl.className = "text-sm font-medium text-red-600";
-                loadingIndicator.classList.add('hidden');
-                emptyState.classList.remove('hidden');
-                return;
-            }
-
-            authStatusEl.textContent = "Conectando ao sistema...";
-
-            try {
-                // 1. Autenticação
-                if (typeof __initial_auth_token !== 'undefined') {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                onAuthStateChanged(auth, (user) => {
-                    if (user) {
-                        isAuthReady = true;
-                        authStatusEl.textContent = `Conectado como: ${user.uid}`;
-                        authStatusEl.className = "text-sm font-medium text-gray-600 truncate";
-                        // 2. Inicia a escuta em tempo real
-                        startRealtimeListener();
-                    } else {
-                        isAuthReady = false;
-                        authStatusEl.textContent = "ERRO: Conexão com o sistema falhou.";
-                        authStatusEl.className = "text-sm font-medium text-red-600";
-                        loadingIndicator.classList.add('hidden');
-                        emptyState.classList.remove('hidden');
-                    }
-                });
-
-            } catch (error) {
-                console.error("Firebase Auth Error:", error);
-                authStatusEl.textContent = `ERRO FATAL: Falha na autenticação. ${error.message}`;
-                authStatusEl.className = "text-sm font-medium text-red-600";
-                loadingIndicator.classList.add('hidden');
-            }
-        }
-
-        /**
-         * Inicia o listener de tempo real do Firestore.
-         */
-        function startRealtimeListener() {
-            if (!db || !isAuthReady) return;
-
-            const submittedRef = getSubmittedCollectionRef();
-            if (!submittedRef) {
-                console.error("Referência da coleção Firestore é nula.");
-                return;
-            }
-
-            const q = query(submittedRef);
-
-            onSnapshot(q, (snapshot) => {
-                const checklists = [];
-                snapshot.forEach((doc) => {
-                    checklists.push({
-                        id: doc.id,
-                        data: doc.data()
-                    });
-                });
-                // Invertendo a ordem para mostrar os mais recentes primeiro
-                checklists.reverse(); 
-                renderChecklists(checklists);
-            }, (error) => {
-                console.error("Erro ao receber dados do Firestore:", error);
-                authStatusEl.textContent = `ERRO: Falha na escuta de dados. ${error.message}`;
-                authStatusEl.className = "text-sm font-medium text-red-600";
-                loadingIndicator.classList.add('hidden');
-            });
-        }
-        
-        // --- Event Listeners ---
-        // (Listeners para o modal)
-        
-        window.addEventListener('DOMContentLoaded', () => {
-             if (initializeDOMReferences()) {
-                
-                closeModalBtn.addEventListener('click', () => {
-                    detailsModal.classList.add('hidden');
-                    currentChecklistData = null;
-                });
-
-                exportSingleBtn.addEventListener('click', () => {
-                    if (currentChecklistData) {
-                        exportToCSV(currentChecklistData.data);
-                    }
-                });
-                
-                setupAuthAndListen();
-            }
+      document.querySelectorAll('[data-doc-id]').forEach(card=>{
+        card.addEventListener('click',()=>{
+          const docId=card.getAttribute('data-doc-id');
+          const checklist=checklists.find(c=>c.id===docId);
+          if(checklist){ currentChecklistData=checklist; showDetailsModal(checklist.data); }
         });
-    </script>
+      });
+    }
+
+    const checklistStructure=[
+      { id:'gerais', title:"🏡 ÁREAS COMUNS E GERAIS", tasks:["Coletar lixo...","Limpar espelhos...","Limpar/Desinfetar interruptores...","Aspirar/Varrer...","Desinfetar superfícies...","Ventilar o ambiente.","Remover teias..."]},
+      { id:'sala', title:"🛋️ SALA DE ESTAR", tasks:["Limpar e organizar mesas...","Limpar a televisão...","Aspirar ou limpar sofás...","Limpar rodapés."]},
+      { id:'quartos', title:"🛏️ QUARTOS", tasks:["Trocar roupas de cama...","Fazer as camas.","2 toalhas de banho...","Sacola de lixo...","Limpar mesas de cabeceira...","Limpar espelhos...","Aspirar ou varrer o chão.","Limpar dentro do guarda-roupa..."]},
+      { id:'banheiros', title:"🛁 BANHEIROS", tasks:["Limpar e desinfetar vasos...","Limpar pias...","Limpar espelhos.","Limpar chuveiro...","Trocar toalhas.","Limpar o chão.","Reabastecer papel...","Sacola de lixo..."]},
+      { id:'cozinha', title:"🍳 COZINHA", tasks:["Limpar a pia.","Limpar bancadas...","1 papel toalha...","No mínimo 5 sacolas...","Limpar fogão e forno...","Limpar micro-ondas...","Esvaziar e limpar a geladeira.","Limpar a lava-louças...","Limpar armários e gavetas...","Lavar a louça e guardar.","Limpar o chão.","Reabastecer produtos...","Encher reservatório de água..."]},
+      { id:'servico', title:"🧺 ÁREA DE SERVIÇO", tasks:["Limpar máquina de lavar...","Limpar secadora...","Limpar tanque/pia...","Organizar produtos...","Limpar o chão."]},
+      { id:'externa', title:"🌿 ÁREA EXTERNA", tasks:["Varrer ou lavar o chão.","Limpar móveis...","Remover teias de aranha.","Regar plantas...","Limpar Churrasqueira..."]},
+      { id:'finalizacao', title:"✅ FINALIZAÇÃO", tasks:["Verificar se todos os cômodos...","Verificar gavetas e armários...","Reabastecer itens de cortesia...","Repor: 2 águas...","Repor: 2 chocolates...","Repor: 1 Vinho...","Ajustar a temperatura...","Acender luzes...","Deixar uma nota de boas-vindas...","Verificar e notificar suprimentos..."]}
+    ];
+
+    function showDetailsModal(data){
+      const md=data.metadata||{};
+      const tasks=data.tasks||{};
+      const submittedAt=formatSubmissionDate(data.submittedAt);
+
+      let html=`
+        <div class="bg-gray-50 p-4 rounded-lg border">
+          <p class="text-sm font-semibold text-gray-700">Propriedade: <span class="font-normal text-blue-700">${escapeHTML(md.propriedade||'N/A')}</span></p>
+          <p class="text-sm font-semibold text-gray-700">Data do Serviço: <span class="font-normal">${escapeHTML(md.data||'N/A')}</span></p>
+          <p class="text-sm font-semibold text-gray-700">Cleaner: <span class="font-normal">${escapeHTML(md.cleaner||'N/A')}</span></p>
+          <p class="text-sm font-semibold text-gray-700">Submetido em: <span class="font-normal">${submittedAt}</span></p>
+          <p class="text-xs font-semibold text-gray-500 mt-2 truncate">ID do Usuário (Cleaner): <span class="font-normal">${escapeHTML(data.submittedBy||'N/A')}</span></p>
+        </div>
+        <h4 class="text-lg font-bold text-gray-700 mt-6 mb-3">Tarefas Realizadas (${Object.keys(tasks).length} itens)</h4>
+        <ul class="task-detail-list bg-white p-4 rounded-lg border max-h-80 overflow-y-auto">`;
+
+      const taskMap={};
+      checklistStructure.forEach(section=>{
+        section.tasks.forEach((taskName,idx)=>{ taskMap[`${section.id}-${idx}`]=taskName; });
+      });
+
+      for(const taskId in tasks){
+        const t=tasks[taskId]||{};
+        const taskName=escapeHTML(taskMap[taskId]||`Tarefa ID: ${taskId}`);
+        const status=t.status?'<span class="text-green-600 font-bold">FEITO</span>':'<span class="text-red-600 font-bold">FALTOU</span>';
+        const obs=t.observation?`<br><span class="text-xs italic text-gray-500">Obs: ${escapeHTML(t.observation)}</span>`:'';
+        html+=`<li><span class="text-gray-900">${taskName}</span>: ${status}${obs}</li>`;
+      }
+      html+=`</ul>`;
+
+      modalContentDetails.innerHTML=html;
+      detailsModal.classList.remove('hidden');
+    }
+
+    function exportToCSV(data){
+      const md=data.metadata||{};
+      const tasks=data.tasks||{};
+      const submittedAt=formatSubmissionDate(data.submittedAt);
+
+      const rows=[];
+      rows.push('Metadados');
+      rows.push(`Propriedade,${(md.propriedade||'')}`);
+      rows.push(`Data do Serviço,${(md.data||'')}`);
+      rows.push(`Cleaner,${(md.cleaner||'')}`);
+      rows.push(`Submetido Em,${submittedAt}`);
+      rows.push('');
+      rows.push('Tarefa,Status,Observações');
+
+      const taskMap={};
+      checklistStructure.forEach(section=>{
+        section.tasks.forEach((taskName,idx)=>{ taskMap[`${section.id}-${idx}`]=taskName; });
+      });
+
+      for(const taskId in tasks){
+        const t=tasks[taskId]||{};
+        const taskText=(taskMap[taskId]||`Tarefa ID: ${taskId}`).replace(/[\n\r]/g,' ').trim();
+        const statusText=t.status?'FEITO':'FALTOU';
+        const obs=(t.observation?String(t.observation):'').replace(/"/g,'""').replace(/[\n\r]/g,' ').trim();
+        rows.push(`"${taskText}",${statusText},"${obs}"`);
+      }
+
+      const bom='\uFEFF';
+      const csvString=bom+rows.join('\n');
+      const blob=new Blob([csvString],{type:'text/csv;charset=utf-8;'});
+      const url=URL.createObjectURL(blob);
+      const propName=(md.propriedade||'Checklist').replace(/[^a-zA-Z0-9]/g,'_');
+      const date=(md.data||new Date().toISOString().slice(0,10));
+      const a=document.createElement('a');
+      a.href=url; a.download=`Submissao_Detalhada_${propName}_${date}.csv`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    async function setupAuthAndListen(){
+      if(!auth){
+        authStatusEl.textContent="ERRO: Firebase Auth não inicializado. (Verifique o console)";
+        authStatusEl.className="text-sm font-medium text-red-600";
+        loadingIndicator.classList.add('hidden'); emptyState.classList.remove('hidden'); return;
+      }
+      authStatusEl.textContent="Conectando ao sistema...";
+      try{
+        if(typeof __initial_auth_token!=='undefined'){ await signInWithCustomToken(auth,__initial_auth_token); }
+        else{ await signInAnonymously(auth); }
+        onAuthStateChanged(auth,(user)=>{
+          if(user){
+            isAuthReady=true;
+            authStatusEl.textContent=`Conectado como: ${user.uid}`;
+            authStatusEl.className="text-sm font-medium text-gray-600 truncate";
+            startRealtimeListener();
+          }else{
+            isAuthReady=false;
+            authStatusEl.textContent="ERRO: Conexão com o sistema falhou.";
+            authStatusEl.className="text-sm font-medium text-red-600";
+            loadingIndicator.classList.add('hidden'); emptyState.classList.remove('hidden');
+          }
+        });
+      }catch(error){
+        console.error("Firebase Auth Error:",error);
+        authStatusEl.textContent=`ERRO FATAL: Falha na autenticação. ${error.message}`;
+        authStatusEl.className="text-sm font-medium text-red-600";
+        loadingIndicator.classList.add('hidden');
+      }
+    }
+
+    function startRealtimeListener(){
+      if(!db||!isAuthReady) return;
+      const submittedRef=getSubmittedCollectionRef();
+      if(!submittedRef){ console.error("Referência da coleção Firestore é nula."); return; }
+
+      const qy=query(submittedRef, orderBy('submittedAt','desc')); // opcional: , limit(200)
+      onSnapshot(qy,(snapshot)=>{
+        const checklists=[];
+        snapshot.forEach(doc=>{ checklists.push({id:doc.id, data:doc.data()}); });
+        renderChecklists(checklists);
+      },(error)=>{
+        console.error("Erro ao receber dados do Firestore:",error);
+        authStatusEl.textContent=`ERRO: Falha na escuta de dados. ${error.message}`;
+        authStatusEl.className="text-sm font-medium text-red-600";
+        loadingIndicator.classList.add('hidden');
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded',()=>{
+      if(initializeDOMReferences()){
+        closeModalBtn.addEventListener('click',()=>{ detailsModal.classList.add('hidden'); currentChecklistData=null; });
+        exportSingleBtn.addEventListener('click',()=>{ if(currentChecklistData){ exportToCSV(currentChecklistData.data); }});
+        setupAuthAndListen();
+      }
+    });
+  </script>
 </body>
 </html>
